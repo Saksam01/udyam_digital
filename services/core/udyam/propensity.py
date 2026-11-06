@@ -1,6 +1,7 @@
 """Lead propensity model with a rule score and reason codes."""
 
 import sys, numpy as np, pandas as pd
+from functools import lru_cache
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import make_pipeline
@@ -44,6 +45,37 @@ def reason_codes(fitted, X, k=3):
         idx = np.argsort(-np.abs(row))[:k]
         out.append("; ".join(f"{'+' if row[i] > 0 else '-'} {names[i].split('__')[1]}" for i in idx))
     return out
+
+@lru_cache(maxsize=1)
+def rank_unclosed(data_dir: str):
+    """Leads the advisor could not close, ranked by how likely they are to activate if called."""
+    L = pd.read_csv(f"{data_dir}/smb_leads.csv")
+    G = pd.read_csv(f"{data_dir}/mock_gstin_registry.csv", dtype=str)
+    U = pd.read_csv(f"{data_dir}/mock_udyam_registry.csv", dtype=str)
+    L, X = features(L, G, U)
+    y = (L.outcome == "Activated").astype(int).values
+    fitted = model().fit(X, y)
+    L["p_activate"] = fitted.predict_proba(X)[:, 1]
+    L["rule_points"] = rule_score(X).values
+    L["reasons"] = reason_codes(fitted, X)
+    un = L[L.outcome != "Activated"].sort_values("p_activate", ascending=False)
+    out = []
+    for _, r in un.iterrows():
+        out.append({
+            "lead_id": r["lead_id"],
+            "business": r.get("business_name"),
+            "segment": r.get("segment"),
+            "city": r.get("city"),
+            "language": r.get("preferred_language"),
+            "stage": r.get("stage_reached"),
+            "drop_reason": r.get("drop_reason") if pd.notna(r.get("drop_reason")) else None,
+            "p_activate": round(float(r["p_activate"]), 3),
+            "rule_points": int(r["rule_points"]),
+            "reasons": r["reasons"],
+            "monthly_spend": int(r["monthly_telecom_spend_inr"]) if pd.notna(r.get("monthly_telecom_spend_inr")) else None,
+        })
+    return out
+
 
 if __name__ == "__main__":
     L, G, U = pd.read_csv(sys.argv[1]), pd.read_csv(sys.argv[2], dtype=str), pd.read_csv(sys.argv[3], dtype=str)

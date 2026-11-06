@@ -16,11 +16,11 @@ os.environ.setdefault("AS_OF_DATE", "2026-07-15")
 
 from typing import Optional
 import base64 as _b64
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from udyam import data_loader, advisor, voice
+from udyam import data_loader, advisor, voice, recommender
 from udyam.quote_engine import build_quote
 
 app = FastAPI(title="Udyam Digital, Core API", version="0.1.0",
@@ -38,6 +38,8 @@ class Profile(BaseModel):
     city: Optional[str] = None
     city_tier: Optional[int] = None
     gstin_status: str = "none"
+    current_tools: Optional[str] = None
+    needs: list[str] = []
 
 
 class QuoteItem(BaseModel):
@@ -60,6 +62,34 @@ class AdvisorRequest(BaseModel):
 
 class KycRequest(BaseModel):
     case_id: str = Field(..., description="One of K01..K12")
+
+
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "accel-admin")
+
+
+def _admin_token() -> str:
+    import hashlib
+    return hashlib.sha256(f"udyam-admin|{ADMIN_PASSWORD}".encode()).hexdigest()[:32]
+
+
+class AdminLogin(BaseModel):
+    password: str
+
+
+@app.post("/api/v1/admin/login")
+def admin_login(req: AdminLogin):
+    if req.password != ADMIN_PASSWORD:
+        raise HTTPException(401, "wrong password")
+    return {"token": _admin_token()}
+
+
+@app.get("/api/v1/admin/leads")
+def admin_leads(authorization: str = Header(default="")):
+    if authorization.replace("Bearer ", "").strip() != _admin_token():
+        raise HTTPException(401, "unauthorized")
+    from udyam import propensity
+    data_dir = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data"))
+    return propensity.rank_unclosed(data_dir)[:40]
 
 
 @app.get("/health")
@@ -122,6 +152,19 @@ def kyc_assess_all():
     return [data_loader.assess_case(cid) for cid in data_loader.kyc_case_ids()]
 
 
+class SuitableRequest(BaseModel):
+    profile: Profile
+    categories: list[str] = []
+    needs: list[str] = []
+
+
+@app.post("/api/v1/catalogue/suitable")
+def catalogue_suitable(req: SuitableRequest):
+    cat = data_loader.catalogue()
+    raw = data_loader.catalogue_raw()
+    return recommender.suitable_products(cat, raw, req.profile.model_dump(), data_loader.city_tiers(), req.categories, req.needs)
+
+
 class TtsRequest(BaseModel):
     text: str
     lang: str = "en-IN"
@@ -130,6 +173,38 @@ class TtsRequest(BaseModel):
 @app.get("/api/v1/voice/status")
 def voice_status():
     return voice.status()
+
+
+@app.post("/api/v1/kyc/extract")
+async def kyc_extract(gst_certificate: UploadFile = File(...)):
+    """Read an uploaded GST certificate, extract the GSTIN and validate it against the mock registry."""
+    from udyam import ocr_pipeline, kyc_engine
+    if not ocr_pipeline.available():
+        return {"ocr_available": False,
+                "message": "Live OCR is not installed on this server. The sample applicants below run the full validation."}
+    import tempfile
+    data = await gst_certificate.read()
+    reg = data_loader.registry()
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tf:
+        tf.write(data)
+        path = tf.name
+    try:
+        ext = ocr_pipeline.extract_gst_certificate(path, set(reg.gst.keys()))
+    except Exception as e:
+        return {"ocr_available": True, "message": f"Could not read the document: {e}"}
+    finally:
+        os.unlink(path)
+    gstin = ext.get("gstin")
+    if not gstin:
+        return {"ocr_available": True, "message": "Could not read a GSTIN. Please re-take the photo in better light."}
+    v = kyc_engine.validate_gstin(gstin)
+    r = reg.gst.get(gstin)
+    return {"ocr_available": True,
+            "extracted": {"gstin": gstin, "source": ext.get("gstin_source")},
+            "validation": {"format_ok": v.get("format_ok"), "checksum_ok": v.get("checksum_ok"),
+                           "state": v.get("state"), "in_registry": r is not None,
+                           "registry_status": r.get("status") if r else None,
+                           "legal_name": r.get("legal_name") if r else None}}
 
 
 @app.post("/api/v1/voice/tts")

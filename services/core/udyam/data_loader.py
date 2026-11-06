@@ -21,6 +21,16 @@ def catalogue():
 
 
 @functools.lru_cache(maxsize=1)
+def catalogue_raw() -> dict:
+    """Full catalogue rows (category, description, prices) keyed by product_id."""
+    rows = {}
+    with open(_p("product_catalogue.csv"), encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            rows[r["product_id"]] = r
+    return rows
+
+
+@functools.lru_cache(maxsize=1)
 def city_tiers() -> dict[str, int]:
     tiers: dict[str, int] = {}
     with open(_p("smb_leads.csv"), encoding="utf-8") as f:
