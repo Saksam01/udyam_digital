@@ -40,6 +40,7 @@ class Profile(BaseModel):
     gstin_status: str = "none"
     current_tools: Optional[str] = None
     needs: list[str] = []
+    categories: list[str] = []
 
 
 class QuoteItem(BaseModel):
@@ -177,12 +178,19 @@ def voice_status():
 
 @app.post("/api/v1/kyc/extract")
 async def kyc_extract(gst_certificate: UploadFile = File(...)):
-    """Read an uploaded GST certificate, extract the GSTIN and validate it against the mock registry."""
+    """Verify an uploaded GST certificate: run the full case for a known specimen, else OCR and validate."""
+    import re as _re, tempfile
     from udyam import ocr_pipeline, kyc_engine
+    fname = os.path.basename(gst_certificate.filename or "")
+    m = _re.match(r"(K\d{2})", fname, _re.I)
+    if m:
+        try:
+            return {"mode": "case", "case": data_loader.assess_case(m.group(1).upper())}
+        except KeyError:
+            pass
     if not ocr_pipeline.available():
-        return {"ocr_available": False,
-                "message": "Live OCR is not installed on this server. The sample applicants below run the full validation."}
-    import tempfile
+        return {"mode": "unavailable",
+                "message": "Upload a sample certificate (K01 to K12) to run the full check, or install Tesseract for live OCR."}
     data = await gst_certificate.read()
     reg = data_loader.registry()
     with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tf:
@@ -191,16 +199,15 @@ async def kyc_extract(gst_certificate: UploadFile = File(...)):
     try:
         ext = ocr_pipeline.extract_gst_certificate(path, set(reg.gst.keys()))
     except Exception as e:
-        return {"ocr_available": True, "message": f"Could not read the document: {e}"}
+        return {"mode": "error", "message": f"Could not read the document: {e}"}
     finally:
         os.unlink(path)
     gstin = ext.get("gstin")
     if not gstin:
-        return {"ocr_available": True, "message": "Could not read a GSTIN. Please re-take the photo in better light."}
+        return {"mode": "error", "message": "Could not read a GSTIN. Please re-take the photo in better light."}
     v = kyc_engine.validate_gstin(gstin)
     r = reg.gst.get(gstin)
-    return {"ocr_available": True,
-            "extracted": {"gstin": gstin, "source": ext.get("gstin_source")},
+    return {"mode": "ocr", "extracted": {"gstin": gstin, "source": ext.get("gstin_source")},
             "validation": {"format_ok": v.get("format_ok"), "checksum_ok": v.get("checksum_ok"),
                            "state": v.get("state"), "in_registry": r is not None,
                            "registry_status": r.get("status") if r else None,

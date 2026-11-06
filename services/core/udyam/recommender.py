@@ -1,10 +1,15 @@
-"""Picks the first candidate bundle that passes every rule gate, then adds the needs the customer asked for."""
+"""Picks a segment bundle, scales access to the number of sites, and adds the needs the customer chose."""
 
 from __future__ import annotations
-from udyam.quote_engine import build_quote, _gate_fail
+from udyam.quote_engine import build_quote, _gate_fail, PRIMARY_ACCESS
 
-# A need the advisor asks about maps to one catalogue product.
-NEED_PRODUCT = {"pos": "P19", "cctv": "P23", "email": "P16", "whatsapp": "P15", "wifi": "P22", "failover": "P09"}
+CATEGORY_KEYS = {
+    "connectivity": "Connectivity",
+    "communication": "Communication",
+    "cloud": "Cloud & Productivity",
+    "security": "Security",
+    "iot": "IoT & Physical",
+}
 
 
 def to_engine_profile(p: dict, city_tiers: dict | None = None) -> dict:
@@ -26,49 +31,69 @@ def to_engine_profile(p: dict, city_tiers: dict | None = None) -> dict:
 
 
 def _candidates(prof: dict) -> list[tuple[str, dict]]:
+    """Base bundles. One primary internet link per site, business lines, and a segment staple."""
     seg, emp, sites = prof["segment"], prof["employees"], prof["num_sites"]
     seats = max(1, round(0.7 * emp))
     gst = prof["gstin_status"] == "active"
     if seg == "micro":
-        return [("Dukaan Smart Store", {"P01": 1, "P07": 2, "P19": 1}),
-                ("Dukaan Connect",     {"P01": 1, "P07": 2})]
+        return [("Dukaan Smart Store", {"P01": sites, "P07": 2, "P19": 1}),
+                ("Dukaan Connect",     {"P01": sites, "P07": 2})]
     if seg == "prof":
         c = []
         if gst and prof["city_tier"] == 1 and emp >= 5:
-            c.append(("Practice Pro", {"P03": 1, "P16": emp, "P08": 3, "P20": min(emp, 8)}))
-        c.append(("Practice Essentials", {"P02": 1, "P16": seats, "P07": 2}))
+            c.append(("Practice Pro", {"P03": sites, "P16": emp, "P08": 3, "P20": min(emp, 8)}))
+        c.append(("Practice Essentials", {"P02": sites, "P16": seats, "P07": 2}))
         return c
     if seg == "multi":
         lines = max(1, round(sites / 2))
+        # Multi-site: one link per site plus automatic backup so no branch goes offline.
         return [("Chain Store Essentials", {"P01": sites, "P09": sites, "P08": lines, "P19": sites}),
                 ("Chain Starter",          {"P01": sites, "P08": lines, "P07": 2})]
     if seg == "mfg":
         c = []
         if gst and emp >= 10:
-            c.append(("Factory Leased Line + IoT", {"P05": 1, "P08": 4, "P16": seats, "P21": 1}))
+            c.append(("Factory Leased Line", {"P05": sites, "P08": 4, "P16": seats, "P21": sites}))
         if gst and prof["city_tier"] == 1 and emp >= 5:
-            c.append(("Factory Fibre", {"P03": 1, "P08": 4, "P16": seats, "P20": min(emp, 8)}))
-        c.append(("Factory Starter", {"P01": 1, "P08": 2, "P16": seats}))
+            c.append(("Factory Fibre", {"P03": sites, "P08": 4, "P16": seats, "P20": min(emp, 8)}))
+        c.append(("Factory Starter", {"P01": sites, "P08": 2, "P16": seats}))
         return c
-    return [("Starter Connect", {"P01": 1, "P07": 2})]
+    return [("Starter Connect", {"P01": sites, "P07": 2})]
 
 
-def _apply_needs(cat, prof: dict, items: dict, need_keys: list[str]):
-    """Add each asked-for need to the bundle if the profile is eligible; report what was skipped."""
-    included, skipped = [], []
-    for k in need_keys:
-        pid = NEED_PRODUCT.get(k)
-        if not pid or pid not in cat:
+def _has_category(cat, raw, items, catname) -> bool:
+    return any(raw.get(pid, {}).get("category") == catname for pid in items)
+
+
+def _add_categories(cat, raw, prof, items, categories):
+    """For each category the customer asked for, add the cheapest product that fits, if we don't already have one."""
+    seg = prof["segment"]
+    added, skipped = [], []
+    for c in categories or []:
+        catname = CATEGORY_KEYS.get(c)
+        if not catname or _has_category(cat, raw, items, catname):
             continue
-        if _gate_fail(cat[pid], prof):
-            skipped.append(k)
+        best = None
+        for pid, p in cat.items():
+            if raw.get(pid, {}).get("category") != catname or pid in items:
+                continue
+            if seg not in p.targets or _gate_fail(cat[pid], prof):
+                continue
+            if pid in PRIMARY_ACCESS and any(x in items for x in PRIMARY_ACCESS):
+                continue  # one primary access only
+            if p.requires_one_of and not any(x in items for x in p.requires_one_of):
+                continue
+            price = p.pmin + p.pmax
+            if best is None or price < best[0]:
+                best = (price, pid)
+        if best:
+            items[best[1]] = 1
+            added.append(c)
         else:
-            items.setdefault(pid, 1)
-            included.append(k)
-    return included, skipped
+            skipped.append(c)
+    return added, skipped
 
 
-def pick(cat, profile_raw: dict, city_tiers: dict | None = None, needs: list[str] | None = None):
+def pick(cat, raw, profile_raw: dict, city_tiers: dict | None = None, categories: list[str] | None = None):
     prof = to_engine_profile(profile_raw, city_tiers)
     chosen = None
     for name, items in _candidates(prof):
@@ -79,20 +104,11 @@ def pick(cat, profile_raw: dict, city_tiers: dict | None = None, needs: list[str
             chosen = (name, dict(items))
             break
     if chosen is None:
-        chosen = ("Starter Connect", {"P01": 1, "P07": 2})
+        chosen = ("Starter Connect", {"P01": max(1, prof["num_sites"]), "P07": 2})
     name, items = chosen
-    included, skipped = _apply_needs(cat, prof, items, needs or [])
+    added, skipped = _add_categories(cat, raw, prof, items, categories or [])
     quote = build_quote(cat, prof, items)
-    return name, items, prof, quote, {"included_needs": included, "skipped_needs": skipped}
-
-
-CATEGORY_KEYS = {
-    "connectivity": "Connectivity",
-    "communication": "Communication",
-    "cloud": "Cloud & Productivity",
-    "security": "Security",
-    "iot": "IoT & Physical",
-}
+    return name, items, prof, quote, {"included_needs": added, "skipped_needs": skipped}
 
 
 def _eligibility(prof: dict, p) -> list[str]:
@@ -113,7 +129,8 @@ def suitable_products(cat, raw, profile_raw, city_tiers=None, categories=None, n
     prof = to_engine_profile(profile_raw, city_tiers)
     seg = prof["segment"]
     wanted = {CATEGORY_KEYS.get(c, c) for c in (categories or [])}
-    rec_name, rec_items, _, _, _ = pick(cat, profile_raw, city_tiers, needs or [])
+    rec_name, rec_items, _, _, _ = pick(cat, raw, profile_raw, city_tiers, categories)
+    has_primary = any(x in rec_items for x in PRIMARY_ACCESS)
     products = []
     for pid in sorted(cat):
         p = cat[pid]
@@ -122,6 +139,9 @@ def suitable_products(cat, raw, profile_raw, city_tiers=None, categories=None, n
         if wanted and category not in wanted:
             continue
         if seg not in p.targets:
+            continue
+        # Don't offer a second primary internet link as an add-on; it competes with the one in the bundle.
+        if pid in PRIMARY_ACCESS and pid not in rec_items and has_primary:
             continue
         reasons = _eligibility(prof, p)
         mid = (p.pmin + p.pmax) / 2
