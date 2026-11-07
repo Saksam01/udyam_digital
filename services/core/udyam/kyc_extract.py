@@ -444,7 +444,7 @@ def process_one(data: bytes, registry_keys=None) -> dict:
 def process_many(files: dict[str, bytes], registry_keys=None) -> dict:
     """files: slot name -> bytes."""
     docs, problems = {}, []
-    with ThreadPoolExecutor(max_workers=4) as ex:
+    with ThreadPoolExecutor(max_workers=max(1, int(os.getenv("OCR_WORKERS", "4")))) as ex:
         futs = {slot: ex.submit(process_one, data, registry_keys) for slot, data in files.items() if data}
         results = {slot: f.result() for slot, f in futs.items()}
     for slot, res in results.items():

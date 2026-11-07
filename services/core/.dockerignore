@@ -1,0 +1,12 @@
+.venv
+.env
+.pytest_cache
+__pycache__
+**/__pycache__
+tests
+conftest.py
+*.wav
+data/udyam.db*
+data/tts_cache
+data/kyc_vault
+data/.vault_key
