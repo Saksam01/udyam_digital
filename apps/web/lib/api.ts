@@ -516,9 +516,15 @@ export const api = {
     const fd = new FormData();
     fd.append("consent_id", consentId);
     for (const [slot, f] of Object.entries(files)) fd.append(slot, f);
-    const res = await fetch(`${API_BASE}/api/v1/orders/${id}/kyc`, { method: "POST", body: fd, headers: ok(id) });
-    if (!res.ok) throw new Error(`kyc failed: ${res.status}`);
-    return res.json();
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 150000);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/orders/${id}/kyc`, { method: "POST", body: fd, headers: ok(id), signal: ctl.signal });
+      if (!res.ok) throw Object.assign(new Error(`kyc failed: ${res.status}`), { status: res.status });
+      return res.json();
+    } finally {
+      clearTimeout(timer);
+    }
   },
   kycCase: (id: string, case_id: string, consentId: string, ocr = false) =>
     post<KycUploadResponse>(`/api/v1/orders/${id}/kyc/case`, { case_id, ocr, consent_id: consentId }, undefined, ok(id)),

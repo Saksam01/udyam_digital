@@ -22,6 +22,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { api, ChecklistItem, CustomerFinding, KycCase, KycUploadResponse, Order, kycDocUrl } from "@/lib/api";
 import { Lang, t } from "@/lib/i18n";
+import { prepareUpload } from "@/lib/upload";
 import LangPill from "./LangPill";
 import { Card, Hero, IconTile, Money, PersonCard, Tone, btn } from "./ui";
 
@@ -50,6 +51,7 @@ export default function KycPanel({
   const [files, setFiles] = useState<Record<string, File>>({});
   const [consentId, setConsentId] = useState<string | null>(null);
   const [consentBusy, setConsentBusy] = useState(false);
+  const [preparing, setPreparing] = useState<string | null>(null);
   const consented = !!consentId;
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
@@ -196,8 +198,9 @@ export default function KycPanel({
       const r = await api.kycUpload(order.order_id, files, consentId);
       setResp(r);
       onOrder(r.order);
-    } catch {
-      setErr(t(lang, "netErr"));
+    } catch (e) {
+      const status = (e as { status?: number }).status;
+      setErr(status ? `${t(lang, "uploadFail")} (${status})` : t(lang, "netErr"));
     } finally {
       setBusy(false);
     }
@@ -220,10 +223,25 @@ export default function KycPanel({
     }
   }
 
-  function pick(slot: string, f: File | undefined) {
+  async function pick(slot: string, f: File | undefined) {
+    setErr("");
+    let ready: File | undefined = f;
+    if (f) {
+      setPreparing(slot);
+      try {
+        ready = await prepareUpload(f);
+      } catch {
+        ready = undefined;
+        setErr(t(lang, "fileUnreadable"));
+        const el = inputs.current[slot];
+        if (el) el.value = "";
+      } finally {
+        setPreparing(null);
+      }
+    }
     setFiles((cur) => {
       const next = { ...cur };
-      if (f) next[slot] = f;
+      if (ready) next[slot] = ready;
       else delete next[slot];
       return next;
     });
@@ -375,7 +393,12 @@ export default function KycPanel({
                     )}
                     <div className="min-w-0 flex-1">
                       <div className="text-[15px] font-semibold leading-snug text-ink-900">{t(lang, sl.labelKey)}</div>
-                      {f ? (
+                      {preparing === sl.key ? (
+                        <div className="flex items-center gap-1 text-[13px] font-medium text-ink-500">
+                          <Loader2 size={14} className="animate-spin" />
+                          {t(lang, "reading")}
+                        </div>
+                      ) : f ? (
                         <div className="flex items-center gap-1 truncate text-[13px] font-medium text-success-600">
                           <CheckCircle2 size={14} className="shrink-0" />
                           <span className="truncate">{f.name}</span>
@@ -525,7 +548,7 @@ export default function KycPanel({
               {t(lang, "docsAdded").replace("{a}", String(requiredCount - missing.length)).replace("{b}", String(requiredCount))}
               {err && <div className="text-danger-600">{err}</div>}
             </div>
-            <button onClick={submit} disabled={busy || !consented || missing.length > 0} className={`${btn.primary} max-w-[58%]`}>
+            <button onClick={submit} disabled={busy || !!preparing || !consented || missing.length > 0} className={`${btn.primary} max-w-[58%]`}>
               {busy ? <Loader2 size={18} className="animate-spin" /> : null}
               {busy ? t(lang, "reading") : status === "kyc_rejected" ? t(lang, "reupload") : t(lang, "verifyBtn")}
             </button>
