@@ -1,5 +1,3 @@
-"""Sarvam voice proxy; the API key stays on the server."""
-
 from __future__ import annotations
 import base64
 import hashlib
@@ -7,17 +5,16 @@ import io
 import os
 import re
 import tempfile
+import threading
 import wave
+from concurrent.futures import ThreadPoolExecutor
 
-# Sarvam retired bulbul:v2; v3 is the current natural-voice model. Override via .env if needed.
 TTS_MODEL = os.getenv("SARVAM_TTS_MODEL", "bulbul:v3")
 STT_MODEL = os.getenv("SARVAM_STT_MODEL", "saarika:v2.5")
 SPEAKER = os.getenv("SARVAM_SPEAKER", "anushka")
 
-# If the chosen speaker isn't valid for the model, fall through these before giving up.
 SPEAKER_FALLBACKS = ["anushka", "manisha", "vidya", "shubh", "abhilash", "karun", "hitesh"]
 
-# Sarvam caps a single TTS request; long replies are split and stitched back together.
 TTS_CHAR_LIMIT = 450
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -30,7 +27,7 @@ def _key() -> str | None:
 
 def _sdk_ok() -> bool:
     try:
-        import sarvamai  # noqa: F401
+        import sarvamai
         return True
     except Exception:
         return False
@@ -45,9 +42,19 @@ def status() -> dict:
             "tts_model": TTS_MODEL, "stt_model": STT_MODEL, "speaker": SPEAKER}
 
 
+_client_obj = None
+_good_speaker: str | None = None
+_mem: dict[str, bytes] = {}
+_pool = ThreadPoolExecutor(max_workers=6)
+_lock = threading.Lock()
+
+
 def _client():
-    from sarvamai import SarvamAI
-    return SarvamAI(api_subscription_key=_key())
+    global _client_obj
+    if _client_obj is None:
+        from sarvamai import SarvamAI
+        _client_obj = SarvamAI(api_subscription_key=_key())
+    return _client_obj
 
 
 def _split(text: str) -> list[str]:
@@ -72,24 +79,28 @@ def _split(text: str) -> list[str]:
 
 
 def _convert(client, text: str, lang_code: str):
-    # Try the configured speaker, then a few known-good ones, then the model's default.
-    speakers: list[str | None] = [SPEAKER] + [s for s in SPEAKER_FALLBACKS if s != SPEAKER] + [None]
+    global _good_speaker
+    first = _good_speaker or SPEAKER
+    speakers: list[str | None] = [first] + [s for s in [SPEAKER] + SPEAKER_FALLBACKS if s != first] + [None]
     last = None
     for sp in speakers:
         kw: dict = {"text": text, "language_code": lang_code, "model": TTS_MODEL}
         if sp:
             kw["speaker"] = sp
         try:
-            return client.text_to_speech.convert(**kw)
+            resp = client.text_to_speech.convert(**kw)
         except TypeError:
-            # Older SDKs used target_language_code instead of language_code.
             kw["target_language_code"] = kw.pop("language_code")
             try:
-                return client.text_to_speech.convert(**kw)
+                resp = client.text_to_speech.convert(**kw)
             except Exception as e:
                 last = e
+                continue
         except Exception as e:
             last = e
+            continue
+        _good_speaker = sp
+        return resp
     raise last
 
 
@@ -109,30 +120,81 @@ def _stitch(wavs: list[bytes]) -> bytes:
     return buf.getvalue()
 
 
+def _key_for(text: str, lang_code: str) -> str:
+    return hashlib.sha256(f"{TTS_MODEL}|{SPEAKER}|{lang_code}|{text}".encode()).hexdigest()[:24]
+
+
+def _one(client, chunk: str, lang_code: str) -> bytes:
+    resp = _convert(client, chunk, lang_code)
+    audios = getattr(resp, "audios", None)
+    if not audios:
+        raise RuntimeError("Sarvam TTS returned no audio")
+    return base64.b64decode(audios[0])
+
+
+_inflight: dict[str, threading.Event] = {}
+
+
 def tts(text: str, lang_code: str) -> bytes:
-    """WAV bytes for `text` spoken in `lang_code` (e.g. 'hi-IN'), cached by content."""
+    """WAV bytes for `text` spoken in `lang_code` (e.g."""
     text = (text or "").strip()
     if not text:
         raise RuntimeError("no text to speak")
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    h = hashlib.sha256(f"{TTS_MODEL}|{SPEAKER}|{lang_code}|{text}".encode()).hexdigest()[:24]
+    h = _key_for(text, lang_code)
+    with _lock:
+        hit = _mem.get(h)
+        waiter = _inflight.get(h) if not hit else None
+        if not hit and not waiter:
+            _inflight[h] = threading.Event()
+    if hit:
+        return hit
+    if waiter:
+        waiter.wait(timeout=30)
+        with _lock:
+            hit = _mem.get(h)
+        if hit:
+            return hit
+        return tts(text, lang_code)
+    try:
+        return _synthesise(text, lang_code, h)
+    finally:
+        with _lock:
+            ev = _inflight.pop(h, None)
+        if ev:
+            ev.set()
+
+
+def _synthesise(text: str, lang_code: str, h: str) -> bytes:
     path = os.path.join(CACHE_DIR, f"{h}.wav")
     if os.path.exists(path):
         with open(path, "rb") as f:
-            return f.read()
-
-    client = _client()
-    parts = []
-    for chunk in _split(text):
-        resp = _convert(client, chunk, lang_code)
-        audios = getattr(resp, "audios", None)
-        if not audios:
-            raise RuntimeError("Sarvam TTS returned no audio")
-        parts.append(base64.b64decode(audios[0]))
-    data = _stitch(parts)
-    with open(path, "wb") as f:
-        f.write(data)
+            data = f.read()
+    else:
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        client = _client()
+        chunks = _split(text)
+        if len(chunks) == 1:
+            parts = [_one(client, chunks[0], lang_code)]
+        else:
+            parts = list(_pool.map(lambda c: _one(client, c, lang_code), chunks))
+        data = _stitch(parts)
+        with open(path, "wb") as f:
+            f.write(data)
+    with _lock:
+        if len(_mem) > 200:
+            _mem.pop(next(iter(_mem)))
+        _mem[h] = data
     return data
+
+
+def warm(items: list[tuple[str, str]]) -> None:
+    def run(text: str, lang: str):
+        try:
+            tts(text, lang)
+        except Exception:
+            pass
+    for text, lang in items[:12]:
+        _pool.submit(run, text, lang)
 
 
 def stt(audio_bytes: bytes, filename: str = "audio.wav", lang_code: str = "unknown") -> str:

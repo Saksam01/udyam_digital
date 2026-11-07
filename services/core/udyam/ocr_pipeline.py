@@ -1,5 +1,3 @@
-"""GST certificate OCR (optional OpenCV and Tesseract)."""
-
 import re, subprocess, tempfile, os
 try:
     import cv2, numpy as np
@@ -23,7 +21,7 @@ def available() -> bool:
 def quality(img_gray):
     return {"laplacian_var": float(cv2.Laplacian(img_gray, cv2.CV_64F).var()), "short_side": min(img_gray.shape)}
 
-def remove_watermark(bgr):  # pink diagonal watermark -> white
+def remove_watermark(bgr):
     hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV); out = bgr.copy()
     out[(hsv[..., 1] > 40) & (hsv[..., 2] > 120)] = 255
     return cv2.cvtColor(out, cv2.COLOR_BGR2GRAY)

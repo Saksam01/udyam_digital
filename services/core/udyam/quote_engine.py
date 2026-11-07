@@ -1,5 +1,3 @@
-"""Deterministic quotes, eligibility rules and activation ETAs."""
-
 from __future__ import annotations
 import csv, hashlib, json, uuid
 from dataclasses import dataclass, field
@@ -31,7 +29,6 @@ class Violation:
     rule: str; product: str | None; severity: str; message: str; fix: list = field(default_factory=list)
 
 def evaluate(cat, profile: dict, items: dict[str, int]) -> list[Violation]:
-    """profile: segment(micro|prof|multi|mfg), city_tier(1|2), employees, num_sites, gstin_status(active|none|unverified|cancelled|suspended)"""
     v: list[Violation] = []
     for pid, q in items.items():
         if pid not in cat:
@@ -77,7 +74,6 @@ def segment_code(profile): return profile["segment"]
 def _mid(p: Product) -> Decimal: return (Decimal(p.pmin) + Decimal(p.pmax)) / 2
 
 def build_quote(cat, profile: dict, items: dict[str, int], price_point: str = "list", catalogue_version: str = "2026-10-04") -> dict:
-    """price_point: 'list' (midpoint of range) or 'floor' (sum of minimums; only for 24m contracts or multi-site >= 8 sites)."""
     violations = evaluate(cat, profile, items)
     blocking = [x for x in violations if x.severity == "block"]
     lines, mmin, mmax, mlist, setup = [], 0, 0, Decimal(0), 0

@@ -1,5 +1,3 @@
-"""Repairs an OCR'd GSTIN using the checksum and registry."""
-
 import sys, re, itertools, csv, os
 try:
     from udyam.kyc_rules import validate_gstin, gstin_check_char
@@ -8,7 +6,7 @@ except ImportError:
 TO_DIGIT = {'O':'0','D':'0','Q':'0','I':'1','L':'1','T':'1','Z':'2','S':'5','B':'8','G':'6','A':'4'}
 TO_ALPHA = {v:k for k,v in [('O','0'),('I','1'),('Z','2'),('S','5'),('B','8'),('G','6'),('A','4')]}
 CONFUSE = {'I':'JLT1','J':'I','1':'IL','L':'1I','T':'I1','O':'0DQ','0':'OD','D':'0O','S':'5','5':'S','B':'8','8':'B','Z':'2','2':'Z','G':'6','6':'G'}
-SLOTS = "DDAAAAADDDDAXZX"   # D digit, A alpha, X alnum, Z literal Z
+SLOTS = "DDAAAAADDDDAXZX"
 def coerce(raw):
     s = re.sub(r"[^0-9A-Z]", "", raw.upper())
     if len(s) != 15: return s

@@ -1,5 +1,3 @@
-"""The 12 fixtures must match the KYC answer key."""
-
 import pytest
 from udyam import data_loader
 

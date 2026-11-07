@@ -1,5 +1,3 @@
-"""Loads and caches the catalogue, registries, tiers and KYC fixtures."""
-
 from __future__ import annotations
 import csv, json, os, functools
 from udyam.quote_engine import load_catalogue
@@ -11,7 +9,6 @@ DATA_DIR = os.getenv("DATA_DIR", os.path.normpath(os.path.join(HERE, "..", "data
 def _p(name: str) -> str:
     return os.path.join(DATA_DIR, name)
 
-# K04's GST certificate is deliberately too blurred to read.
 BLURRED = {"K04": {"gst_certificate": 1.0}}
 
 
@@ -67,7 +64,7 @@ def lead_for(gstin: str, trade_name: str | None = None, address: str | None = No
     lead = _leads_by_gstin().get(gstin)
     if lead:
         return lead
-    if trade_name:  # fall back to a name + city match
+    if trade_name:
         for r in _leads_by_gstin().values():
             if r.get("business_name") == trade_name and (not address or r.get("city", "") in address):
                 return r
@@ -85,14 +82,14 @@ def kyc_case_summary(case_id: str) -> dict:
             "constitution": g.get("constitution"), "city_state": g.get("address", "").split(",")[-2:]}
 
 
-def assess_case(case_id: str) -> dict:
+def assess_case(case_id: str, declared: str | None = None) -> dict:
     fx = fixtures().get(case_id)
     if not fx:
         raise KeyError(case_id)
     gst = dict(fx["gst"]); gst["gstin"] = gst["gstin"].rstrip("?")
     lead = lead_for(gst["gstin"], gst.get("trade_name"), gst.get("address"))
     app = {"quality": BLURRED.get(case_id, {}), "gst": gst,
-           "udyam": fx.get("udyam"), "sig": fx["sig"], "bill": fx["bill"]}
+           "udyam": fx.get("udyam"), "sig": fx["sig"], "bill": fx["bill"], "declared": declared}
     out = assess(app, registry(), lead)
     out["case_id"] = case_id
     out["business"] = gst.get("trade_name")

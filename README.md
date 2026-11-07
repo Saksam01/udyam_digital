@@ -17,11 +17,11 @@ udyam-digital/
 │  ├─ app.py             HTTP API
 │  ├─ udyam/             core logic (quote_engine, kyc_engine, validator, recommender, …)
 │  ├─ data/              the provided dataset (catalogue, registries, KYC fixtures + images)
-│  └─ tests/             pytest: quote correctness + the 12 KYC verdicts
-└─ apps/web/             Next.js frontend, conversational advisor, quote, KYC, tracker
+│  └─ tests/             pytest: quotes, KYC verdicts, OCR, orders, consent
+└─ apps/web/             Next.js frontend: customer app (/) and back office (/admin)
    ├─ app/               pages + styling
-   ├─ components/        AdvisorChat, QuoteCard, KycPanel, Tracker
-   └─ lib/               API client, i18n (English/Hindi + regional), browser voice
+   ├─ components/        advisor, plan, KYC, tracker, sales console, verification desk
+   └─ lib/               API client, translations for 8 languages, voice
 ```
 
 ## Backend, run it
@@ -37,7 +37,7 @@ python -m venv .venv
 ```
 
 - Interactive API docs: http://127.0.0.1:8000/docs
-- Run the tests: `pytest -q` (16 tests, quote correctness + all 12 KYC verdicts)
+- Run the tests: `pytest -q` (quotes, the 12 KYC verdicts with and without OCR, order lifecycle, consent)
 
 Key endpoints: `POST /api/v1/quotes`, `POST /api/v1/advisor/messages`,
 `POST /api/v1/kyc/assess`, `GET /api/v1/kyc/assess-all`, `GET /api/v1/catalogue`.
@@ -67,6 +67,17 @@ Open http://localhost:3000. The frontend talks to the backend on port 8000 (over
 - **Smart KYC**, validates GST checksum, registry status, name matches, document freshness and
   signatory authority; returns PASS / REVIEW / REJECT with reasons.
 - **Order tracker**, per-item activation timeline.
+
+## Back office
+
+Open http://localhost:3000/admin. The password decides the desk: `ADMIN_PASSWORD` opens the sales
+console, `VERIFIER_PASSWORD` the verification desk. Only the verification desk sees document pages.
+
+## Demo samples
+
+The 12 sample applicants (K01-K12) can be run from the customer app only in demo mode: open
+`http://localhost:3000/?demo=1` once on the device (`?demo=0` hides them again). The server allows
+them while `DEMO_MODE=1`; set `DEMO_MODE=0` or `APP_ENV=production` for real customers.
 
 ## Data & validation modes
 

@@ -1,5 +1,3 @@
-"""KYC helpers: GSTIN checksum, PAN/Udyam formats, name matching."""
-
 import re, unicodedata
 from difflib import SequenceMatcher
 
@@ -16,7 +14,6 @@ PAN_RE   = re.compile(r"^[A-Z]{3}[ABCFGHLJPTX][A-Z]\d{4}[A-Z]$")
 UDYAM_RE = re.compile(r"^UDYAM-([A-Z]{2})-(\d{2})-(\d{7})$")
 
 def gstin_check_char(first14: str) -> str:
-    """Official GSTN mod-36 checksum: alternate weights 1,2; product split into quotient+remainder base 36."""
     total = 0
     for i, ch in enumerate(first14):
         v = CHARSET.index(ch) * (2 if i % 2 else 1)
@@ -39,16 +36,15 @@ def validate_udyam(u: str) -> dict:
     m = UDYAM_RE.match(u)
     if not m: return {"udyam": u, "format_ok": False}
     return {"udyam": u, "format_ok": True, "state_code": m.group(1), "state": UDYAM_STATE.get(m.group(1)),
-            "district": m.group(2), "district_is_mock_00": m.group(2) == "00"}
+            "district": m.group(2), "district_is_00": m.group(2) == "00"}
 
-# name normalisation
 HONORIFICS = r"\b(m/s|messrs|mr|mrs|ms|miss|dr|shri|sri|smt|kumari|prop|proprietor)\b\.?"
 SUFFIX_MAP = [(r"\bprivate\s+limited\b", "pvt ltd"), (r"\bpvt\.?\s*ltd\.?\b", "pvt ltd"), (r"\bp\.?\s*ltd\b", "pvt ltd"),
               (r"\blimited\b", "ltd"), (r"\blimited liability partnership\b", "llp"), (r"\bl\.l\.p\.?\b", "llp"),
               (r"\bcompany\b", "co"), (r"\band\b", "&")]
 def normalise_name(s: str, drop_legal_suffix=False) -> str:
     s = unicodedata.normalize("NFKC", s or "").lower()
-    s = re.sub(r"\(.*?\)", lambda m: " " + m.group(0)[1:-1] + " ", s)   # keep bracket content, drop brackets
+    s = re.sub(r"\(.*?\)", lambda m: " " + m.group(0)[1:-1] + " ", s)
     for pat, rep in SUFFIX_MAP: s = re.sub(pat, rep, s)
     s = re.sub(HONORIFICS, " ", s)
     s = s.replace("&", " and ")
@@ -77,7 +73,7 @@ def name_similarity(a: str, b: str, drop_legal_suffix=False) -> dict:
             "score": round(max(lev, dl), 3)}
 
 def split_prop_name(legal_name: str):
-    """'Neha Kaur (Prop. Vindhya Tours & Travels)' -> ('Neha Kaur', 'Vindhya Tours & Travels')"""
+    """'Neha Kaur (Prop."""
     m = re.match(r"^(.*?)\s*\(\s*Prop\.?\s*(.*?)\)\s*$", legal_name or "")
     return (m.group(1).strip(), m.group(2).strip()) if m else (None, None)
 

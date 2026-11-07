@@ -1,5 +1,3 @@
-"""Forces mock KYC mode and the fixed demo date for the test run."""
-
 import os
 import sys
 

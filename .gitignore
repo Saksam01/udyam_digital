@@ -11,8 +11,12 @@ env/
 .env
 *.local
 
-# Generated voice cache
+# Generated at runtime
 services/core/data/tts_cache/
+services/core/data/udyam.db*
+# kyc vault and its key
+services/core/data/kyc_vault/
+services/core/data/.vault_key
 
 # Node / frontend (added in a later phase)
 node_modules/
@@ -27,3 +31,5 @@ build/
 
 # generated audio
 *.wav
+
+*.tsbuildinfo

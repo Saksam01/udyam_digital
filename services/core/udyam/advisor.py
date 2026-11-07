@@ -1,12 +1,9 @@
-"""Turns a profile into a validated, localized bundle recommendation."""
-
 from __future__ import annotations
 import re
 from udyam.quote_engine import build_quote
 from udyam.validator import validate_reply
-from udyam import data_loader, recommender
+from udyam import data_loader, recommender, llm, profiles
 
-# Identifiers are tokenised before any free text is logged or sent to an external service.
 PATTERNS = [
     ("GSTIN", r"\b\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]\b"),
     ("UDYAM", r"\bUDYAM-[A-Z]{2}-\d{2}-\d{7}\b"),
@@ -16,10 +13,8 @@ PATTERNS = [
     ("EMAIL", r"\b[\w.+-]+@[\w-]+\.[\w.]+\b"),
 ]
 
-# The spoken/printed reply is built from these per-language blocks. Only PRICE carries figures, and
-# only its English form is validated, so the guardrail still reasons about every number shown.
 PRICE = {
-    "en": "For your business I recommend the {bundle} bundle: ₹{monthly}/month, ₹{setup} one-time setup, a {contract}-month contract, live in about {eta} days.",
+    "en": "For your business I recommend the {bundle}: ₹{monthly}/month, ₹{setup} one-time setup, a {contract}-month contract, live in about {eta} days.",
     "hi": "आपके व्यवसाय के लिए मैं {bundle} बंडल सुझाता हूँ: ₹{monthly}/माह, ₹{setup} एकमुश्त सेटअप, {contract} महीने का अनुबंध, और लगभग {eta} दिनों में चालू।",
     "ta": "உங்கள் வணிகத்திற்கு நான் {bundle} தொகுப்பை பரிந்துரைக்கிறேன்: ₹{monthly}/மாதம், ₹{setup} ஒருமுறை அமைப்புக் கட்டணம், {contract} மாத ஒப்பந்தம், சுமார் {eta} நாட்களில் செயல்படும்.",
     "te": "మీ వ్యాపారానికి నేను {bundle} బండిల్‌ను సిఫార్సు చేస్తున్నాను: ₹{monthly}/నెల, ₹{setup} ఒకసారి సెటప్, {contract} నెలల ఒప్పందం, సుమారు {eta} రోజుల్లో యాక్టివేషన్.",
@@ -92,25 +87,36 @@ UPGRADE = {
 }
 
 NEEDS_ADDED = {
-    "en": "I've included the extras you asked for.",
-    "hi": "आपने जो अतिरिक्त चीज़ें चाहीं, वे मैंने जोड़ दी हैं।",
-    "ta": "நீங்கள் கேட்ட கூடுதல் சேவைகளை நான் சேர்த்துள்ளேன்.",
-    "te": "మీరు అడిగిన అదనపు సేవలను నేను చేర్చాను.",
-    "bn": "আপনি যে অতিরিক্ত সেবাগুলি চেয়েছেন, সেগুলি আমি যোগ করেছি।",
-    "mr": "तुम्ही मागितलेल्या अतिरिक्त सेवा मी जोडल्या आहेत.",
-    "kn": "ನೀವು ಕೇಳಿದ ಹೆಚ್ಚುವರಿ ಸೇವೆಗಳನ್ನು ನಾನು ಸೇರಿಸಿದ್ದೇನೆ.",
-    "pa": "ਤੁਸੀਂ ਜੋ ਵਾਧੂ ਸੇਵਾਵਾਂ ਮੰਗੀਆਂ, ਉਹ ਮੈਂ ਜੋੜ ਦਿੱਤੀਆਂ ਹਨ।",
+    "en": "It also covers what you asked for.",
+    "hi": "आपने जो माँगा था, वह भी इसमें शामिल है।",
+    "ta": "நீங்கள் கேட்டவையும் இதில் அடங்கும்.",
+    "te": "మీరు అడిగినవి కూడా ఇందులో ఉన్నాయి.",
+    "bn": "আপনি যা চেয়েছিলেন, সেটাও এতে আছে।",
+    "mr": "तुम्ही जे मागितले, तेही यात आहे.",
+    "kn": "ನೀವು ಕೇಳಿದ್ದೂ ಇದರಲ್ಲಿ ಸೇರಿದೆ.",
+    "pa": "ਤੁਸੀਂ ਜੋ ਮੰਗਿਆ ਸੀ, ਉਹ ਵੀ ਇਸ ਵਿੱਚ ਸ਼ਾਮਲ ਹੈ।",
 }
 
 NEEDS_SKIPPED = {
-    "en": "A couple of extras need an active GST number, so I left those out for now.",
-    "hi": "कुछ अतिरिक्त सेवाओं के लिए एक्टिव GST नंबर चाहिए, इसलिए उन्हें अभी छोड़ दिया है।",
-    "ta": "சில கூடுதல் சேவைகளுக்கு செயலில் உள்ள GST எண் தேவை, எனவே அவற்றை இப்போது விட்டுவிட்டேன்.",
-    "te": "కొన్ని అదనపు సేవలకు యాక్టివ్ GST నంబర్ అవసరం, కాబట్టి వాటిని ప్రస్తుతం వదిలేశాను.",
-    "bn": "কিছু অতিরিক্ত সেবার জন্য সক্রিয় GST নম্বর দরকার, তাই সেগুলি আপাতত বাদ দিয়েছি।",
-    "mr": "काही अतिरिक्त सेवांसाठी सक्रिय GST नंबर आवश्यक आहे, म्हणून त्या सध्या वगळल्या आहेत.",
-    "kn": "ಕೆಲವು ಹೆಚ್ಚುವರಿ ಸೇವೆಗಳಿಗೆ ಸಕ್ರಿಯ GST ಸಂಖ್ಯೆ ಅಗತ್ಯ, ಆದ್ದರಿಂದ ಅವುಗಳನ್ನು ಸದ್ಯ ಬಿಟ್ಟಿದ್ದೇನೆ.",
-    "pa": "ਕੁਝ ਵਾਧੂ ਸੇਵਾਵਾਂ ਲਈ ਸਰਗਰਮ GST ਨੰਬਰ ਚਾਹੀਦਾ ਹੈ, ਇਸ ਲਈ ਉਹ ਹੁਣ ਲਈ ਛੱਡ ਦਿੱਤੀਆਂ।",
+    "en": "Some of what you asked for needs an active GST number or a larger setup, so it is not in the plan yet.",
+    "hi": "आपकी माँगी कुछ सेवाओं के लिए एक्टिव GST नंबर या बड़ा सेटअप चाहिए, इसलिए वे अभी प्लान में नहीं हैं।",
+    "ta": "நீங்கள் கேட்ட சிலவற்றுக்கு செயலில் உள்ள GST எண் அல்லது பெரிய அமைப்பு தேவை, எனவே அவை இப்போது திட்டத்தில் இல்லை.",
+    "te": "మీరు అడిగిన కొన్నింటికి యాక్టివ్ GST నంబర్ లేదా పెద్ద సెటప్ అవసరం, కాబట్టి అవి ఇప్పుడు ప్లాన్‌లో లేవు.",
+    "bn": "আপনার চাওয়া কিছু জিনিসের জন্য সক্রিয় GST নম্বর বা বড় সেটআপ দরকার, তাই সেগুলি এখন প্ল্যানে নেই।",
+    "mr": "तुम्ही मागितलेल्या काही गोष्टींसाठी सक्रिय GST क्रमांक किंवा मोठा सेटअप लागतो, म्हणून त्या सध्या प्लॅनमध्ये नाहीत.",
+    "kn": "ನೀವು ಕೇಳಿದ ಕೆಲವಕ್ಕೆ ಸಕ್ರಿಯ GST ಸಂಖ್ಯೆ ಅಥವಾ ದೊಡ್ಡ ಸೆಟಪ್ ಬೇಕು, ಆದ್ದರಿಂದ ಅವು ಈಗ ಪ್ಲಾನ್‌ನಲ್ಲಿ ಇಲ್ಲ.",
+    "pa": "ਤੁਹਾਡੀਆਂ ਮੰਗੀਆਂ ਕੁਝ ਚੀਜ਼ਾਂ ਲਈ ਸਰਗਰਮ GST ਨੰਬਰ ਜਾਂ ਵੱਡਾ ਸੈੱਟਅੱਪ ਚਾਹੀਦਾ ਹੈ, ਇਸ ਲਈ ਉਹ ਹਾਲੇ ਪਲਾਨ ਵਿੱਚ ਨਹੀਂ ਹਨ।",
+}
+
+ADJUST = {
+    "en": "On the next screen you can change the number of lines, cameras or seats, and switch add-ons on or off. The price updates as you go.",
+    "hi": "अगली स्क्रीन पर आप लाइन, कैमरे या सीटों की संख्या बदल सकते हैं और ऐड-ऑन चालू या बंद कर सकते हैं। कीमत साथ-साथ बदलती है।",
+    "ta": "அடுத்த திரையில் இணைப்புகள், கேமராக்கள் அல்லது இருக்கைகளின் எண்ணிக்கையை மாற்றலாம், கூடுதல் சேவைகளை சேர்க்கலாம் அல்லது நீக்கலாம். விலை உடனே மாறும்.",
+    "te": "తదుపరి స్క్రీన్‌లో లైన్లు, కెమెరాలు లేదా సీట్ల సంఖ్యను మార్చవచ్చు, యాడ్-ఆన్‌లను ఆన్ లేదా ఆఫ్ చేయవచ్చు. ధర వెంటనే మారుతుంది.",
+    "bn": "পরের স্ক্রিনে লাইন, ক্যামেরা বা সিটের সংখ্যা বদলাতে পারবেন, আর অ্যাড-অন চালু বা বন্ধ করতে পারবেন। দাম সঙ্গে সঙ্গে বদলাবে।",
+    "mr": "पुढच्या स्क्रीनवर तुम्ही लाइन, कॅमेरे किंवा सीट्सची संख्या बदलू शकता आणि ॲड-ऑन चालू किंवा बंद करू शकता. किंमत लगेच बदलते.",
+    "kn": "ಮುಂದಿನ ಪರದೆಯಲ್ಲಿ ಲೈನ್‌ಗಳು, ಕ್ಯಾಮೆರಾಗಳು ಅಥವಾ ಸೀಟುಗಳ ಸಂಖ್ಯೆ ಬದಲಿಸಬಹುದು, ಆಡ್-ಆನ್‌ಗಳನ್ನು ಆನ್ ಅಥವಾ ಆಫ್ ಮಾಡಬಹುದು. ಬೆಲೆ ತಕ್ಷಣ ಬದಲಾಗುತ್ತದೆ.",
+    "pa": "ਅਗਲੀ ਸਕ੍ਰੀਨ 'ਤੇ ਤੁਸੀਂ ਲਾਈਨਾਂ, ਕੈਮਰਿਆਂ ਜਾਂ ਸੀਟਾਂ ਦੀ ਗਿਣਤੀ ਬਦਲ ਸਕਦੇ ਹੋ ਅਤੇ ਐਡ-ਆਨ ਚਾਲੂ ਜਾਂ ਬੰਦ ਕਰ ਸਕਦੇ ਹੋ। ਕੀਮਤ ਨਾਲ-ਨਾਲ ਬਦਲਦੀ ਹੈ।",
 }
 
 TRUST = {
@@ -139,7 +145,6 @@ def redact(text: str, vault: dict) -> str:
 
 
 def _money(x) -> str:
-    # No rounding; a rounded figure would be a number the engine never returned.
     f = float(x)
     return f"{f:,.0f}" if f == int(f) else f"{f:,.2f}"
 
@@ -152,7 +157,7 @@ def recommend(profile: dict) -> dict:
     cat = data_loader.catalogue()
     raw = data_loader.catalogue_raw()
     categories = profile.get("categories") or profile.get("needs") or []
-    name, items, eng_profile, quote, extras = recommender.pick(cat, raw, profile, data_loader.city_tiers(), categories)
+    name, items, eng_profile, quote, extras = recommender.pick(cat, raw, profile, data_loader.city_tiers(), categories, profile.get("need_tags"))
     return {"bundle": name, "items": items, "profile": eng_profile, "quote": quote, "extras": extras}
 
 
@@ -167,14 +172,17 @@ def deterministic_reply(profile: dict, lang: str = "en") -> dict:
     canonical = PRICE["en"].format(**figures)
     problems = validate_reply(canonical, [q], {int(r["profile"]["employees"]), int(r["profile"]["num_sites"])})
 
-    parts = [_t(PRICE, lang).format(**figures), _t(WHY, lang).get(seg, WHY["en"][seg])]
+    why = extras["why"] if lang == "en" and extras.get("why") else _t(WHY, lang).get(seg, WHY["en"][seg])
+    if lang != "en":
+        why = _localized_why(r, lang) or why
+    parts = [_t(PRICE, lang).format(**figures), why]
     if (profile.get("current_tools") or "") in CONSUMER_GRADE:
         parts.append(_t(UPGRADE, lang))
-    if extras["included_needs"]:
+    if extras.get("asked") and extras["included_needs"]:
         parts.append(_t(NEEDS_ADDED, lang))
-    if extras["skipped_needs"]:
+    if extras.get("asked") and extras["skipped_needs"]:
         parts.append(_t(NEEDS_SKIPPED, lang))
-    parts.append(_t(TRUST, lang))
+    parts.append(_t(ADJUST, lang))
     text = " ".join(parts)
 
     chips = ["See full price breakdown", "Add CCTV", "Add POS", "Talk to a person"]
@@ -182,9 +190,66 @@ def deterministic_reply(profile: dict, lang: str = "en") -> dict:
             "chips": chips, "validator": "deterministic" if not problems else f"blocked:{problems}"}
 
 
+_NUMERIC = re.compile(r"[\d\u0966-\u096f\u09e6-\u09ef\u0a66-\u0a6f\u0be6-\u0bef\u0c66-\u0c6f\u0ce6-\u0cef₹%]")
+
+
+def _localized_why(r: dict, lang: str) -> str | None:
+    if not llm.available():
+        return None
+    facts = {"business": r["extras"].get("business"), "bundle": r["bundle"],
+             "services": [i.get("label") or i.get("name") for i in r["quote"].get("items", [])][:7]}
+    text = llm.explain(facts, lang)
+    if not text or _NUMERIC.search(text) or len(text) > 400:
+        return None
+    return text.strip()
+
+
+_MISSING_Q = {
+    "employees": "Got it, a {name}. Roughly how many people work in the business?",
+    "type": "Tell me what kind of business it is (for example a salon, clinic, kirana store or software company) and how many people work there.",
+}
+
+
+def profile_from_text(session: dict, text: str, lang: str) -> dict | None:
+    """Free text or speech to a profile."""
+    vault = session.setdefault("vault", {})
+    parsed = llm.parse_profile(redact(text, vault), lang, list(profiles.SPECS), list(profiles.NEED_TAGS))
+    if not parsed:
+        return None
+    part = session.setdefault("partial", {})
+    for k, v in parsed.items():
+        if v not in (None, "", []) and k != "summary":
+            part[k] = v
+    spec = profiles.SPECS.get(part.get("business_type") or "")
+    if not spec:
+        return {"text": _MISSING_Q["type"], "quote_card": None, "bundle": None, "chips": [], "validator": "deterministic"}
+    try:
+        emp = int(part.get("employees"))
+    except (TypeError, ValueError):
+        return {"text": _MISSING_Q["employees"].format(name=spec.name), "quote_card": None, "bundle": None, "chips": [],
+                "validator": "deterministic"}
+    tags = [t for t in (part.get("need_tags") or []) if t in profiles.NEED_TAGS]
+    session["profile"] = {"segment": spec.segment, "business_type": spec.key, "employees": emp,
+                          "num_sites": int(part.get("num_sites") or 1), "city": part.get("city"),
+                          "gstin_status": part.get("gstin_status") or "none", "need_tags": tags}
+    session.pop("partial", None)
+    return None
+
+
+NEEDS_PROFILE = {
+    "en": "Tell me a little about your business and I'll size a bundle: what do you run, roughly how many staff and locations, which city, and do you have a GST number?",
+    "hi": "अपने व्यवसाय के बारे में थोड़ा बताइए, मैं सही बंडल तय कर दूँगा: आप क्या चलाते हैं, लगभग कितने कर्मचारी और कितनी लोकेशन हैं, कौन-सा शहर है, और क्या आपके पास GST नंबर है?",
+    "ta": "உங்கள் வணிகம் பற்றி கொஞ்சம் சொல்லுங்கள், சரியான தொகுப்பை நான் பரிந்துரைக்கிறேன்: நீங்கள் என்ன நடத்துகிறீர்கள், சுமார் எத்தனை ஊழியர்கள், எத்தனை இடங்கள், எந்த நகரம், உங்களிடம் GST எண் உள்ளதா?",
+    "te": "మీ వ్యాపారం గురించి కొంచెం చెప్పండి, సరైన బండిల్‌ను నేను సూచిస్తాను: మీరు ఏమి నడుపుతున్నారు, సుమారు ఎంత మంది సిబ్బంది, ఎన్ని లొకేషన్లు, ఏ నగరం, మీకు GST నంబర్ ఉందా?",
+    "bn": "আপনার ব্যবসা সম্পর্কে একটু বলুন, আমি সঠিক বান্ডেল ঠিক করে দেব: আপনি কী চালান, আনুমানিক কতজন কর্মী ও কতগুলি লোকেশন, কোন শহর, আর আপনার কি GST নম্বর আছে?",
+    "mr": "तुमच्या व्यवसायाबद्दल थोडे सांगा, मी योग्य बंडल ठरवतो: तुम्ही काय चालवता, साधारण किती कर्मचारी आणि किती ठिकाणे आहेत, कोणते शहर, आणि तुमच्याकडे GST क्रमांक आहे का?",
+    "kn": "ನಿಮ್ಮ ವ್ಯಾಪಾರದ ಬಗ್ಗೆ ಸ್ವಲ್ಪ ಹೇಳಿ, ಸರಿಯಾದ ಬಂಡಲ್ ಅನ್ನು ನಾನು ಸೂಚಿಸುತ್ತೇನೆ: ನೀವು ಏನು ನಡೆಸುತ್ತೀರಿ, ಸುಮಾರು ಎಷ್ಟು ಸಿಬ್ಬಂದಿ ಮತ್ತು ಎಷ್ಟು ಸ್ಥಳಗಳು, ಯಾವ ನಗರ, ಮತ್ತು ನಿಮ್ಮ ಬಳಿ GST ಸಂಖ್ಯೆ ಇದೆಯೇ?",
+    "pa": "ਆਪਣੇ ਕਾਰੋਬਾਰ ਬਾਰੇ ਥੋੜ੍ਹਾ ਦੱਸੋ, ਮੈਂ ਸਹੀ ਬੰਡਲ ਤੈਅ ਕਰ ਦਿਆਂਗਾ: ਤੁਸੀਂ ਕੀ ਚਲਾਉਂਦੇ ਹੋ, ਲਗਭਗ ਕਿੰਨੇ ਕਰਮਚਾਰੀ ਅਤੇ ਕਿੰਨੀਆਂ ਥਾਵਾਂ, ਕਿਹੜਾ ਸ਼ਹਿਰ, ਅਤੇ ਕੀ ਤੁਹਾਡੇ ਕੋਲ GST ਨੰਬਰ ਹੈ?",
+}
+
+
 def needs_profile_reply(lang: str = "en") -> dict:
-    return {"text": "Tell me a little about your business and I'll size a bundle: what do you run, "
-                    "roughly how many staff and locations, which city, and do you have a GST number?",
+    return {"text": NEEDS_PROFILE.get(lang, NEEDS_PROFILE["en"]),
             "quote_card": None, "bundle": None,
             "chips": ["Micro / retail shop", "Professional office", "Multi-site chain", "Manufacturer"],
             "validator": "deterministic"}
@@ -194,4 +259,11 @@ def run_turn(session: dict, user_text: str) -> dict:
     profile = session.get("profile")
     if profile and profile.get("segment"):
         return deterministic_reply(profile, session.get("lang", "en"))
-    return needs_profile_reply(session.get("lang", "en"))
+    lang = session.get("lang", "en")
+    if user_text.strip() and llm.available():
+        asked = profile_from_text(session, user_text, lang)
+        if session.get("profile"):
+            return deterministic_reply(session["profile"], lang)
+        if asked:
+            return asked
+    return needs_profile_reply(lang)

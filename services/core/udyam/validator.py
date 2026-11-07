@@ -1,5 +1,3 @@
-"""Blocks any number or product id the engine did not return."""
-
 import json, re
 from decimal import Decimal
 DEVANAGARI = str.maketrans("०१२३४५६७८९", "0123456789")
@@ -15,7 +13,6 @@ def _val(num, mult):
     d = Decimal(num.replace(",", "")); return d * MULT.get((mult or "").lower(), 1)
 
 def harvest(tool_outputs: list[dict]) -> tuple[set, set]:
-    """Collect every number and product ID that appears anywhere in tool results."""
     nums, pids = set(), set()
     def walk(x):
         if isinstance(x, dict): [walk(v) for v in x.values()]
@@ -33,7 +30,7 @@ def validate_reply(text: str, tool_outputs: list[dict], profile_numbers: set[int
     for m in MONEY.finditer(t):
         num, mult = (m.group(1), m.group(2)) if m.group(1) else (m.group(3), m.group(4))
         v = _val(num, mult).normalize()
-        if mult:   # "1.8k" style rounding is never allowed - exact figures only
+        if mult:
             problems.append(f"approximate amount '{m.group(0).strip()}'")
         elif v not in nums: problems.append(f"amount {m.group(0).strip()} not returned by a tool")
     for m in PID.finditer(t):
