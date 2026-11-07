@@ -1,11 +1,10 @@
-// Sarvam voice via the backend, with a browser-voice fallback.
 import { API_BASE } from "./api";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export interface ListenResult {
   transcript: string;
-  heardSpeech: boolean; // false when the mic picked up only silence/noise
+  heardSpeech: boolean;
 }
 
 export async function sarvamOn(): Promise<boolean> {
@@ -18,7 +17,6 @@ export async function sarvamOn(): Promise<boolean> {
   }
 }
 
-// Probe TTS with a tiny phrase. Returns null when it works, else a short error string.
 export async function sarvamTtsError(locale: string): Promise<string | null> {
   try {
     const r = await fetch(`${API_BASE}/api/v1/voice/tts`, {
@@ -41,8 +39,32 @@ export async function sarvamTtsError(locale: string): Promise<string | null> {
   }
 }
 
-export async function sarvamSpeak(text: string, locale: string, onEnd?: () => void): Promise<void> {
-  try {
+function chunkText(text: string): string[] {
+  const sentences = text.split(/(?<=[।.!?])\s+/).filter(Boolean);
+  const out: string[] = [];
+  let cur = "";
+  for (const s of sentences) {
+    const limit = out.length === 0 ? 90 : 220;
+    if (cur && (cur + " " + s).length > limit) {
+      out.push(cur);
+      cur = s;
+    } else {
+      cur = cur ? `${cur} ${s}` : s;
+    }
+  }
+  if (cur) out.push(cur);
+  return out.length ? out : [text];
+}
+
+const clips = new Map<string, Promise<string>>();
+let current: HTMLAudioElement | null = null;
+let playToken = 0;
+
+function clip(text: string, locale: string): Promise<string> {
+  const key = `${locale}|${text}`;
+  const hit = clips.get(key);
+  if (hit) return hit;
+  const p = (async () => {
     const r = await fetch(`${API_BASE}/api/v1/voice/tts`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,20 +72,85 @@ export async function sarvamSpeak(text: string, locale: string, onEnd?: () => vo
     });
     if (!r.ok) throw new Error("tts");
     const j = await r.json();
-    const audio = new Audio(`data:${j.mime};base64,${j.audio_base64}`);
-    audio.onended = () => onEnd?.();
-    audio.onerror = () => onEnd?.();
-    await audio.play();
-  } catch {
-    onEnd?.();
+    const bin = atob(j.audio_base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: j.mime || "audio/wav" }));
+  })();
+  p.catch(() => clips.delete(key));
+  clips.set(key, p);
+  return p;
+}
+
+function play(url: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const a = new Audio(url);
+    current = a;
+    a.onended = () => resolve();
+    a.onerror = () => reject(new Error("playback"));
+    a.play().catch(reject);
+  });
+}
+
+export function stopSarvam(): void {
+  playToken++;
+  if (current) {
+    current.pause();
+    current = null;
   }
 }
 
-// Listen for an answer. We watch the mic level: wait for speech to start, record until the
-// speaker goes quiet, and report heardSpeech=false if nobody said anything, so the caller can
-// drop back to text instead of looping on silence.
+export function sarvamWarm(texts: string[], locale: string): void {
+  const flat = texts.flatMap(chunkText);
+  flat.forEach((c) => clip(c, locale).catch(() => {}));
+}
+
+export async function sarvamSpeak(text: string, locale: string, onEnd?: () => void): Promise<boolean> {
+  stopSarvam();
+  const token = ++playToken;
+  const parts = chunkText(text).map((c) => clip(c, locale));
+  let played = false;
+  try {
+    for (const p of parts) {
+      const url = await p;
+      if (token !== playToken) return true;
+      await play(url);
+      played = true;
+    }
+  } catch {
+    if (!played) return false;
+  }
+  if (token === playToken) onEnd?.();
+  return true;
+}
+
+let mic: MediaStream | null = null;
+let listenToken = 0;
+
+export function cancelListen(): void {
+  listenToken++;
+}
+let micTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function openMic(): Promise<MediaStream> {
+  if (micTimer) clearTimeout(micTimer);
+  if (!mic || !mic.active) {
+    mic = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+  }
+  return mic;
+}
+
+export function releaseMic(): void {
+  if (micTimer) clearTimeout(micTimer);
+  mic?.getTracks().forEach((t) => t.stop());
+  mic = null;
+}
+
 export async function sarvamListen(locale: string): Promise<ListenResult> {
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stopSarvam();
+  const my = ++listenToken;
+  const live = () => my === listenToken;
+  const stream = await openMic();
   const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   const ctx = new AudioCtx();
   const analyser = ctx.createAnalyser();
@@ -85,14 +172,13 @@ export async function sarvamListen(locale: string): Promise<ListenResult> {
   });
   rec.start();
 
-  const STEP = 50;          // ms between level checks
-  const ONSET_WAIT = 5000;  // ms to wait for the person to start talking
-  const END_SILENCE = 900;  // ms of quiet that ends the answer
+  const STEP = 50;
+  const ONSET_WAIT = 6000;
+  const END_SILENCE = 500;
   const MAX_UTTERANCE = 9000;
 
-  // Calibrate the room for ~300ms, then set the speech threshold above it.
   let ambient = 0, n = 0;
-  const calEnd = performance.now() + 300;
+  const calEnd = performance.now() + 150;
   while (performance.now() < calEnd) {
     ambient += level();
     n++;
@@ -102,7 +188,7 @@ export async function sarvamListen(locale: string): Promise<ListenResult> {
 
   let heardSpeech = false;
   const waitStart = performance.now();
-  while (performance.now() - waitStart < ONSET_WAIT) {
+  while (live() && performance.now() - waitStart < ONSET_WAIT) {
     if (level() > threshold) {
       heardSpeech = true;
       break;
@@ -113,7 +199,7 @@ export async function sarvamListen(locale: string): Promise<ListenResult> {
   if (heardSpeech) {
     const uttStart = performance.now();
     let lastLoud = uttStart;
-    while (performance.now() - uttStart < MAX_UTTERANCE) {
+    while (live() && performance.now() - uttStart < MAX_UTTERANCE) {
       if (level() > threshold) lastLoud = performance.now();
       else if (performance.now() - lastLoud > END_SILENCE) break;
       await sleep(STEP);
@@ -122,10 +208,10 @@ export async function sarvamListen(locale: string): Promise<ListenResult> {
 
   rec.stop();
   await stopped;
-  stream.getTracks().forEach((t) => t.stop());
   ctx.close().catch(() => {});
+  micTimer = setTimeout(releaseMic, 30000);
 
-  if (!heardSpeech) return { transcript: "", heardSpeech: false };
+  if (!heardSpeech || !live()) return { transcript: "", heardSpeech: false };
 
   const recorded = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
   const wav = await toWav(recorded);
@@ -143,10 +229,10 @@ export async function sarvamListen(locale: string): Promise<ListenResult> {
     throw new Error(`STT ${r.status} ${detail}`);
   }
   const j = await r.json();
+  if (!live()) return { transcript: "", heardSpeech: false };
   return { transcript: ((j.transcript as string) || "").trim(), heardSpeech: true };
 }
 
-// Decode whatever the browser recorded, resample to 16 kHz mono, and encode as 16-bit WAV.
 async function toWav(blob: Blob): Promise<Blob> {
   const buf = await blob.arrayBuffer();
   const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;

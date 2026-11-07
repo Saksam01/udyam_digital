@@ -1,4 +1,5 @@
-// Localisation and the advisor question flow for all eight languages.
+import { EXTRA } from "./i18n_extra";
+import { MORE } from "./i18n/more";
 export type Lang = "en" | "hi" | "ta" | "te" | "bn" | "mr" | "kn" | "pa";
 
 export const LANGS: { code: Lang; label: string; locale: string }[] = [
@@ -24,7 +25,7 @@ const EN: Dict = {
   appName: "Udyam Digital",
   tagline: "Discover, buy and activate, in one sitting.",
   tab_advisor: "Advisor",
-  tab_kyc: "Smart KYC",
+  tab_kyc: "Verify",
   tab_tracker: "Tracker",
   welcome: "Namaste! I'm your Accel Business advisor. A few quick questions and I'll suggest the right bundle, in your language, by voice or text.",
   recommending: "Preparing your bundle…",
@@ -61,8 +62,6 @@ const EN: Dict = {
   readFrom: "Read from your GST certificate",
   inRegistry: "In GST registry",
   statusLbl: "Status",
-  orSamples: "Or try sample applicants",
-  ocrOff: "Live OCR isn't available here, so use the sample applicants for the full check.",
   voiceUnavailable: "Voice isn't available right now, let's continue by text.",
   noVoiceHeard: "I didn't hear anything, you can type your answer below.",
   perMonth: "/month",
@@ -97,7 +96,7 @@ const HI: Dict = {
   appName: "उद्यम डिजिटल",
   tagline: "खोजें, खरीदें और एक ही बार में चालू करें।",
   tab_advisor: "सलाहकार",
-  tab_kyc: "स्मार्ट KYC",
+  tab_kyc: "सत्यापन",
   tab_tracker: "ट्रैकर",
   welcome: "नमस्ते! मैं आपका Accel Business सलाहकार हूँ। कुछ छोटे सवालों के बाद मैं आपके लिए सही बंडल सुझाऊँगा, आपकी भाषा में, बोलकर या लिखकर।",
   recommending: "आपके लिए बंडल तैयार कर रहा हूँ…",
@@ -134,8 +133,6 @@ const HI: Dict = {
   readFrom: "आपके GST सर्टिफिकेट से पढ़ा गया",
   inRegistry: "GST रजिस्ट्री में",
   statusLbl: "स्थिति",
-  orSamples: "या नमूना आवेदक आज़माएँ",
-  ocrOff: "यहाँ लाइव OCR उपलब्ध नहीं है, पूरी जाँच के लिए नमूना आवेदक इस्तेमाल करें।",
   voiceUnavailable: "अभी आवाज़ उपलब्ध नहीं है, चलिए टाइप करके आगे बढ़ते हैं।",
   noVoiceHeard: "मुझे कुछ सुनाई नहीं दिया, आप नीचे अपना जवाब लिख सकते हैं।",
   perMonth: "/माह",
@@ -170,7 +167,7 @@ const TA: Dict = {
   appName: "உத்யம் டிஜிட்டல்",
   tagline: "கண்டறியுங்கள், வாங்குங்கள், ஒரே அமர்வில் செயல்படுத்துங்கள்.",
   tab_advisor: "ஆலோசகர்",
-  tab_kyc: "ஸ்மார்ட் KYC",
+  tab_kyc: "சரிபார்ப்பு",
   tab_tracker: "டிராக்கர்",
   welcome: "வணக்கம்! நான் உங்கள் Accel Business ஆலோசகர். சில விரைவான கேள்விகள், பிறகு சரியான தொகுப்பை பரிந்துரைக்கிறேன், உங்கள் மொழியில், குரல் அல்லது உரை மூலம்.",
   recommending: "உங்கள் தொகுப்பை தயார் செய்கிறேன்…",
@@ -207,8 +204,6 @@ const TA: Dict = {
   readFrom: "உங்கள் GST சான்றிதழில் இருந்து படிக்கப்பட்டது",
   inRegistry: "GST பதிவேட்டில்",
   statusLbl: "நிலை",
-  orSamples: "அல்லது மாதிரி விண்ணப்பதாரர்களை முயற்சிக்கவும்",
-  ocrOff: "இங்கு நேரடி OCR இல்லை, முழு சரிபார்ப்புக்கு மாதிரி விண்ணப்பதாரர்களைப் பயன்படுத்தவும்.",
   voiceUnavailable: "இப்போது குரல் கிடைக்கவில்லை, உரை மூலம் தொடரலாம்.",
   noVoiceHeard: "எதுவும் கேட்கவில்லை, கீழே உங்கள் பதிலை தட்டச்சு செய்யலாம்.",
   perMonth: "/மாதம்",
@@ -243,7 +238,7 @@ const TE: Dict = {
   appName: "ఉద్యమ్ డిజిటల్",
   tagline: "కనుగొనండి, కొనండి, ఒకే సిట్టింగ్‌లో యాక్టివేట్ చేయండి.",
   tab_advisor: "సలహాదారు",
-  tab_kyc: "స్మార్ట్ KYC",
+  tab_kyc: "ధృవీకరణ",
   tab_tracker: "ట్రాకర్",
   welcome: "నమస్తే! నేను మీ Accel Business సలహాదారుని. కొన్ని చిన్న ప్రశ్నలు, ఆపై మీకు సరైన బండిల్‌ను సూచిస్తాను, మీ భాషలో, వాయిస్ లేదా టెక్స్ట్ ద్వారా.",
   recommending: "మీ బండిల్‌ను సిద్ధం చేస్తున్నాను…",
@@ -280,8 +275,6 @@ const TE: Dict = {
   readFrom: "మీ GST సర్టిఫికేట్ నుండి చదవబడింది",
   inRegistry: "GST రిజిస్ట్రీలో",
   statusLbl: "స్థితి",
-  orSamples: "లేదా నమూనా దరఖాస్తుదారులను ప్రయత్నించండి",
-  ocrOff: "ఇక్కడ లైవ్ OCR అందుబాటులో లేదు, పూర్తి తనిఖీ కోసం నమూనా దరఖాస్తుదారులను ఉపయోగించండి.",
   voiceUnavailable: "ప్రస్తుతం వాయిస్ అందుబాటులో లేదు, టెక్స్ట్‌తో కొనసాగుదాం.",
   noVoiceHeard: "నాకు ఏమీ వినిపించలేదు, కింద మీ సమాధానాన్ని టైప్ చేయవచ్చు.",
   perMonth: "/నెల",
@@ -316,7 +309,7 @@ const BN: Dict = {
   appName: "উদ্যম ডিজিটাল",
   tagline: "খুঁজুন, কিনুন এবং এক বসাতেই চালু করুন।",
   tab_advisor: "পরামর্শদাতা",
-  tab_kyc: "স্মার্ট KYC",
+  tab_kyc: "যাচাই",
   tab_tracker: "ট্র্যাকার",
   welcome: "নমস্কার! আমি আপনার Accel Business পরামর্শদাতা। কয়েকটি ছোট প্রশ্ন, তারপর আমি সঠিক বান্ডল সুপারিশ করব, আপনার ভাষায়, কণ্ঠে বা লিখে।",
   recommending: "আপনার বান্ডল তৈরি করছি…",
@@ -353,8 +346,6 @@ const BN: Dict = {
   readFrom: "আপনার GST সার্টিফিকেট থেকে পড়া",
   inRegistry: "GST রেজিস্ট্রিতে",
   statusLbl: "অবস্থা",
-  orSamples: "অথবা নমুনা আবেদনকারী চেষ্টা করুন",
-  ocrOff: "এখানে লাইভ OCR নেই, সম্পূর্ণ যাচাইয়ের জন্য নমুনা আবেদনকারী ব্যবহার করুন।",
   voiceUnavailable: "এই মুহূর্তে কণ্ঠ উপলব্ধ নয়, চলুন লিখে এগোই।",
   noVoiceHeard: "আমি কিছু শুনতে পাইনি, নিচে আপনার উত্তর লিখতে পারেন।",
   perMonth: "/মাস",
@@ -389,7 +380,7 @@ const MR: Dict = {
   appName: "उद्यम डिजिटल",
   tagline: "शोधा, खरेदी करा आणि एकाच बैठकीत सुरू करा.",
   tab_advisor: "सल्लागार",
-  tab_kyc: "स्मार्ट KYC",
+  tab_kyc: "पडताळणी",
   tab_tracker: "ट्रॅकर",
   welcome: "नमस्कार! मी तुमचा Accel Business सल्लागार आहे. काही छोटे प्रश्न, मग मी योग्य बंडल सुचवेन, तुमच्या भाषेत, आवाजाने किंवा लिहून.",
   recommending: "तुमचे बंडल तयार करत आहे…",
@@ -426,8 +417,6 @@ const MR: Dict = {
   readFrom: "तुमच्या GST प्रमाणपत्रातून वाचले",
   inRegistry: "GST रजिस्ट्रीमध्ये",
   statusLbl: "स्थिती",
-  orSamples: "किंवा नमुना अर्जदार वापरून पहा",
-  ocrOff: "इथे लाइव्ह OCR उपलब्ध नाही, पूर्ण तपासणीसाठी नमुना अर्जदार वापरा.",
   voiceUnavailable: "सध्या आवाज उपलब्ध नाही, चला लिहून पुढे जाऊ.",
   noVoiceHeard: "मला काही ऐकू आले नाही, खाली तुमचे उत्तर लिहू शकता.",
   perMonth: "/महिना",
@@ -462,7 +451,7 @@ const KN: Dict = {
   appName: "ಉದ್ಯಮ್ ಡಿಜಿಟಲ್",
   tagline: "ಹುಡುಕಿ, ಖರೀದಿಸಿ ಮತ್ತು ಒಂದೇ ಬಾರಿಗೆ ಸಕ್ರಿಯಗೊಳಿಸಿ.",
   tab_advisor: "ಸಲಹೆಗಾರ",
-  tab_kyc: "ಸ್ಮಾರ್ಟ್ KYC",
+  tab_kyc: "ಪರಿಶೀಲನೆ",
   tab_tracker: "ಟ್ರ್ಯಾಕರ್",
   welcome: "ನಮಸ್ತೆ! ನಾನು ನಿಮ್ಮ Accel Business ಸಲಹೆಗಾರ. ಕೆಲವು ಸಣ್ಣ ಪ್ರಶ್ನೆಗಳು, ನಂತರ ಸರಿಯಾದ ಬಂಡಲ್ ಅನ್ನು ಸೂಚಿಸುತ್ತೇನೆ, ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ, ಧ್ವನಿ ಅಥವಾ ಪಠ್ಯದ ಮೂಲಕ.",
   recommending: "ನಿಮ್ಮ ಬಂಡಲ್ ಸಿದ್ಧಪಡಿಸುತ್ತಿದ್ದೇನೆ…",
@@ -499,8 +488,6 @@ const KN: Dict = {
   readFrom: "ನಿಮ್ಮ GST ಪ್ರಮಾಣಪತ್ರದಿಂದ ಓದಲಾಗಿದೆ",
   inRegistry: "GST ರಿಜಿಸ್ಟ್ರಿಯಲ್ಲಿ",
   statusLbl: "ಸ್ಥಿತಿ",
-  orSamples: "ಅಥವಾ ಮಾದರಿ ಅರ್ಜಿದಾರರನ್ನು ಪ್ರಯತ್ನಿಸಿ",
-  ocrOff: "ಇಲ್ಲಿ ಲೈವ್ OCR ಇಲ್ಲ, ಪೂರ್ಣ ಪರಿಶೀಲನೆಗೆ ಮಾದರಿ ಅರ್ಜಿದಾರರನ್ನು ಬಳಸಿ.",
   voiceUnavailable: "ಸದ್ಯ ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ, ಪಠ್ಯದ ಮೂಲಕ ಮುಂದುವರಿಯೋಣ.",
   noVoiceHeard: "ನನಗೆ ಏನೂ ಕೇಳಿಸಲಿಲ್ಲ, ಕೆಳಗೆ ನಿಮ್ಮ ಉತ್ತರ ಟೈಪ್ ಮಾಡಬಹುದು.",
   perMonth: "/ತಿಂಗಳು",
@@ -535,7 +522,7 @@ const PA: Dict = {
   appName: "ਉਦਯਮ ਡਿਜੀਟਲ",
   tagline: "ਲੱਭੋ, ਖਰੀਦੋ ਅਤੇ ਇੱਕੋ ਬੈਠਕ ਵਿੱਚ ਚਾਲੂ ਕਰੋ।",
   tab_advisor: "ਸਲਾਹਕਾਰ",
-  tab_kyc: "ਸਮਾਰਟ KYC",
+  tab_kyc: "ਤਸਦੀਕ",
   tab_tracker: "ਟ੍ਰੈਕਰ",
   welcome: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ਤੁਹਾਡਾ Accel Business ਸਲਾਹਕਾਰ ਹਾਂ। ਕੁਝ ਛੋਟੇ ਸਵਾਲ, ਫਿਰ ਮੈਂ ਸਹੀ ਬੰਡਲ ਸੁਝਾਵਾਂਗਾ, ਤੁਹਾਡੀ ਭਾਸ਼ਾ ਵਿੱਚ, ਬੋਲ ਕੇ ਜਾਂ ਲਿਖ ਕੇ।",
   recommending: "ਤੁਹਾਡਾ ਬੰਡਲ ਤਿਆਰ ਕਰ ਰਿਹਾ ਹਾਂ…",
@@ -572,8 +559,6 @@ const PA: Dict = {
   readFrom: "ਤੁਹਾਡੇ GST ਸਰਟੀਫਿਕੇਟ ਤੋਂ ਪੜ੍ਹਿਆ",
   inRegistry: "GST ਰਜਿਸਟਰੀ ਵਿੱਚ",
   statusLbl: "ਸਥਿਤੀ",
-  orSamples: "ਜਾਂ ਨਮੂਨਾ ਬਿਨੈਕਾਰ ਅਜ਼ਮਾਓ",
-  ocrOff: "ਇੱਥੇ ਲਾਈਵ OCR ਉਪਲਬਧ ਨਹੀਂ, ਪੂਰੀ ਜਾਂਚ ਲਈ ਨਮੂਨਾ ਬਿਨੈਕਾਰ ਵਰਤੋ।",
   voiceUnavailable: "ਇਸ ਵੇਲੇ ਆਵਾਜ਼ ਉਪਲਬਧ ਨਹੀਂ, ਆਓ ਲਿਖ ਕੇ ਅੱਗੇ ਵਧੀਏ।",
   noVoiceHeard: "ਮੈਨੂੰ ਕੁਝ ਸੁਣਾਈ ਨਹੀਂ ਦਿੱਤਾ, ਹੇਠਾਂ ਆਪਣਾ ਜਵਾਬ ਲਿਖ ਸਕਦੇ ਹੋ।",
   perMonth: "/ਮਹੀਨਾ",
@@ -606,10 +591,9 @@ const DICTS: Record<Lang, Dict> = { en: EN, hi: HI, ta: TA, te: TE, bn: BN, mr: 
 
 export function t(lang: Lang, key: string): string {
   const d = DICTS[lang];
-  return (d && d[key]) ?? EN[key] ?? key;
+  return EXTRA[lang]?.[key] ?? (d && d[key]) ?? EXTRA.en[key] ?? EN[key] ?? key;
 }
 
-// ---------- the question flow ----------
 type L = Partial<Record<Lang, string>>;
 function pick(m: L, lang: Lang): string {
   return m[lang] ?? m.en ?? "";
@@ -624,11 +608,25 @@ export interface Opt {
 }
 export interface Step {
   key: string;
-  field: "segment" | "employees" | "num_sites" | "city" | "current_tools" | "gstin_status" | "needs";
-  kind: "chips" | "number" | "text" | "multi" | "select";
+  field: "segment" | "employees" | "num_sites" | "city" | "current_tools" | "gstin_status" | "needs" | "need_tags" | "business";
+  kind: "chips" | "number" | "text" | "multi" | "select" | "name" | "city";
   q: L;
   options?: Opt[];
+  min?: number;
+  max?: number;
+  def?: number;
 }
+
+const NEED_GROUPS: { key: string; keywords: string[] }[] = [
+  { key: "internet", keywords: ["internet", "fibre", "fiber", "broadband", "इंटरनेट"] },
+  { key: "calls", keywords: ["calls", "phone", "sim", "mobile", "कॉल"] },
+  { key: "customer_chat", keywords: ["whatsapp", "sms", "chat", "व्हाट्सएप"] },
+  { key: "cloud", keywords: ["email", "website", "cloud", "backup", "ईमेल", "वेबसाइट"] },
+  { key: "payments", keywords: ["billing", "pos", "payment", "upi", "बिलिंग"] },
+  { key: "security", keywords: ["cctv", "camera", "security", "firewall", "कैमरा"] },
+  { key: "wifi", keywords: ["wifi", "wi-fi", "guest"] },
+  { key: "tracking", keywords: ["vehicle", "gps", "tracking", "machine", "वाहन"] },
+];
 
 export const FLOW: Step[] = [
   {
@@ -659,11 +657,21 @@ export const FLOW: Step[] = [
       { value: "law", seg: "prof", label: { en: "Law firm", hi: "लॉ फर्म / वकील", ta: "சட்ட நிறுவனம்", te: "లా ఫర్మ్ / లాయర్", bn: "ল ফার্ম / আইনজীবী", mr: "लॉ फर्म / वकील", kn: "ಲಾ ಫರ್ಮ್ / ವಕೀಲ", pa: "ਲਾਅ ਫਰਮ / ਵਕੀਲ" }, keywords: ["law", "lawyer", "advocate"] },
       { value: "software", seg: "prof", label: { en: "Software / IT", hi: "सॉफ्टवेयर / IT", ta: "மென்பொருள் / IT", te: "సాఫ్ట్‌వేర్ / IT", bn: "সফটওয়্যার / IT", mr: "सॉफ्टवेअर / IT", kn: "ಸಾಫ್ಟ್‌ವೇರ್ / IT", pa: "ਸਾਫਟਵੇਅਰ / IT" }, keywords: ["software", "it", "tech"] },
       { value: "consulting", seg: "prof", label: { en: "Consulting", hi: "कंसल्टिंग", ta: "ஆலோசனை", te: "కన్సల్టింగ్", bn: "কনসালটিং", mr: "कन्सल्टिंग", kn: "ಕನ್ಸಲ್ಟಿಂಗ್", pa: "ਕੰਸਲਟਿੰਗ" }, keywords: ["consulting", "consultant"] },
-      { value: "restaurant", seg: "multi", label: { en: "Restaurant / cafe chain", hi: "रेस्टोरेंट / कैफे चेन", ta: "உணவகம் / கஃபே", te: "రెస్టారెంట్ / కేఫ్", bn: "রেস্তোরাঁ / ক্যাফে", mr: "रेस्टॉरंट / कॅफे", kn: "ರೆಸ್ಟೋರೆಂಟ್ / ಕೆಫೆ", pa: "ਰੈਸਟੋਰੈਂਟ / ਕੈਫੇ" }, keywords: ["restaurant", "cafe", "hotel", "chain"] },
-      { value: "multistore", seg: "multi", label: { en: "Multi-store retailer", hi: "मल्टी-स्टोर रिटेलर", ta: "பல கடை விற்பனை", te: "మల్టీ-స్టోర్ రిటైలర్", bn: "মাল্টি-স্টোর রিটেলার", mr: "मल्टी-स्टोर रिटेलर", kn: "ಬಹು-ಅಂಗಡಿ ಚಿಲ್ಲರೆ", pa: "ਮਲਟੀ-ਸਟੋਰ ਰਿਟੇਲਰ" }, keywords: ["multi", "chain", "stores", "branches"] },
+      { value: "restaurant", seg: "multi", label: { en: "Restaurant / cafe chain", hi: "रेस्टोरेंट / कैफे चेन", ta: "உணவகம் / கஃபே", te: "రెస్టారెంట్ / కేఫ్", bn: "রেস্তোরাঁ / ক্যাফে", mr: "रेस्टॉरंट / कॅफे", kn: "ರೆಸ್ಟೋರೆಂಟ್ / ಕೆಫೆ", pa: "ਰੈਸਟੋਰੈਂਟ / ਕੈਫੇ" }, keywords: ["restaurant", "cafe", "dhaba", "रेस्टोरेंट"] },
+      { value: "multistore", seg: "multi", label: { en: "Multi-store retailer", hi: "मल्टी-स्टोर रिटेलर", ta: "பல கடை விற்பனை", te: "మల్టీ-స్టోర్ రిటైలర్", bn: "মাল্টি-স্টোর রিটেলার", mr: "मल्टी-स्टोर रिटेलर", kn: "ಬಹು-ಅಂಗಡಿ ಚಿಲ್ಲರೆ", pa: "ਮਲਟੀ-ਸਟੋਰ ਰਿਟੇਲਰ" }, keywords: ["multi store", "multistore", "chain of stores", "stores", "branches"] },
       { value: "autoparts", seg: "mfg", label: { en: "Auto-parts unit", hi: "ऑटो-पार्ट्स यूनिट", ta: "வாகன உதிரிபாகம்", te: "ఆటో-పార్ట్స్ యూనిట్", bn: "অটো-পার্টস ইউনিট", mr: "ऑटो-पार्ट्स युनिट", kn: "ಆಟೋ-ಪಾರ್ಟ್ಸ್ ಘಟಕ", pa: "ਆਟੋ-ਪਾਰਟਸ ਯੂਨਿਟ" }, keywords: ["auto", "parts", "unit"] },
       { value: "textile", seg: "mfg", label: { en: "Textile unit", hi: "टेक्सटाइल यूनिट", ta: "ஜவுளி தொழிற்சாலை", te: "టెక్స్‌టైల్ యూనిట్", bn: "টেক্সটাইল ইউনিট", mr: "टेक्सटाइल युनिट", kn: "ಜವಳಿ ಘಟಕ", pa: "ਟੈਕਸਟਾਈਲ ਯੂਨਿਟ" }, keywords: ["textile", "garment", "factory"] },
       { value: "factory", seg: "mfg", label: { en: "Small factory", hi: "छोटी फैक्ट्री", ta: "சிறு தொழிற்சாலை", te: "చిన్న ఫ్యాక్టరీ", bn: "ছোট কারখানা", mr: "छोटी फॅक्टरी", kn: "ಸಣ್ಣ ಕಾರ್ಖಾನೆ", pa: "ਛੋਟੀ ਫੈਕਟਰੀ" }, keywords: ["factory", "manufacturing", "plant", "फैक्ट्री"] },
+      { value: "mobile_repair", seg: "micro", label: { en: "Mobile repair / electronics", hi: "मोबाइल रिपेयर / इलेक्ट्रॉनिक्स", ta: "மொபைல் பழுது / மின்னணு கடை", te: "మొబైల్ రిపేర్ / ఎలక్ట్రానిక్స్", bn: "মোবাইল মেরামত / ইলেকট্রনিক্স", mr: "मोबाइल दुरुस्ती / इलेक्ट्रॉनिक्स", kn: "ಮೊಬೈಲ್ ರಿಪೇರಿ / ಎಲೆಕ್ಟ್ರಾನಿಕ್ಸ್", pa: "ਮੋਬਾਈਲ ਰਿਪੇਅਰ / ਇਲੈਕਟ੍ਰਾਨਿਕਸ" }, keywords: ["mobile repair", "electronics", "रिपेयर"] },
+      { value: "diagnostic", seg: "prof", label: { en: "Diagnostic lab", hi: "डायग्नोस्टिक लैब", ta: "நோயறிதல் ஆய்வகம்", te: "డయాగ్నస్టిక్ ల్యాబ్", bn: "ডায়াগনস্টিক ল্যাব", mr: "डायग्नोस्टिक लॅब", kn: "ಡಯಾಗ್ನೋಸ್ಟಿಕ್ ಲ್ಯಾಬ್", pa: "ਡਾਇਗਨੋਸਟਿਕ ਲੈਬ" }, keywords: ["diagnostic", "pathology", "lab", "लैब"] },
+      { value: "agency", seg: "prof", label: { en: "Design / marketing agency", hi: "डिज़ाइन / मार्केटिंग एजेंसी", ta: "வடிவமைப்பு / மார்க்கெட்டிங் நிறுவனம்", te: "డిజైన్ / మార్కెటింగ్ ఏజెన్సీ", bn: "ডিজাইন / মার্কেটিং এজেন্সি", mr: "डिझाइन / मार्केटिंग एजन्सी", kn: "ವಿನ್ಯಾಸ / ಮಾರ್ಕೆಟಿಂಗ್ ಏಜೆನ್ಸಿ", pa: "ਡਿਜ਼ਾਈਨ / ਮਾਰਕੀਟਿੰਗ ਏਜੰਸੀ" }, keywords: ["agency", "marketing", "design studio", "एजेंसी"] },
+      { value: "hotel", seg: "multi", label: { en: "Hotel / guest house", hi: "होटल / गेस्ट हाउस", ta: "ஹோட்டல் / விருந்தினர் இல்லம்", te: "హోటల్ / గెస్ట్ హౌస్", bn: "হোটেল / গেস্ট হাউস", mr: "हॉटेल / गेस्ट हाऊस", kn: "ಹೋಟೆಲ್ / ಗೆಸ್ಟ್ ಹೌಸ್", pa: "ਹੋਟਲ / ਗੈਸਟ ਹਾਊਸ" }, keywords: ["hotel", "guest house", "lodge", "homestay", "होटल"] },
+      { value: "gym", seg: "multi", label: { en: "Gym / fitness club", hi: "जिम / फिटनेस क्लब", ta: "ஜிம் / உடற்பயிற்சி மையம்", te: "జిమ్ / ఫిట్‌నెస్ క్లబ్", bn: "জিম / ফিটনেস ক্লাব", mr: "जिम / फिटनेस क्लब", kn: "ಜಿಮ್ / ಫಿಟ್‌ನೆಸ್ ಕ್ಲಬ್", pa: "ਜਿਮ / ਫਿਟਨੈੱਸ ਕਲੱਬ" }, keywords: ["gym", "fitness", "yoga", "जिम"] },
+      { value: "preschool", seg: "multi", label: { en: "School / preschool", hi: "स्कूल / प्लेस्कूल", ta: "பள்ளி / மழலையர் பள்ளி", te: "స్కూల్ / ప్రీస్కూల్", bn: "স্কুল / প্রিস্কুল", mr: "शाळा / प्लेस्कूल", kn: "ಶಾಲೆ / ಪ್ರೀಸ್ಕೂಲ್", pa: "ਸਕੂਲ / ਪ੍ਰੀਸਕੂਲ" }, keywords: ["school", "preschool", "playschool", "स्कूल"] },
+      { value: "pharmacy_chain", seg: "multi", label: { en: "Pharmacy chain", hi: "फार्मेसी चेन", ta: "மருந்தக சங்கிலி", te: "ఫార్మసీ చైన్", bn: "ফার্মেসি চেইন", mr: "फार्मसी चेन", kn: "ಫಾರ್ಮಸಿ ಚೈನ್", pa: "ਫਾਰਮੇਸੀ ਚੇਨ" }, keywords: ["pharmacy chain", "medical chain", "pharmacies", "फार्मेसी चेन"] },
+      { value: "printing", seg: "mfg", label: { en: "Printing press", hi: "प्रिंटिंग प्रेस", ta: "அச்சகம்", te: "ప్రింటింగ్ ప్రెస్", bn: "প্রিন্টিং প্রেস", mr: "प्रिंटिंग प्रेस", kn: "ಮುದ್ರಣಾಲಯ", pa: "ਪ੍ਰਿੰਟਿੰਗ ਪ੍ਰੈਸ" }, keywords: ["printing", "press", "प्रिंटिंग"] },
+      { value: "packaging", seg: "mfg", label: { en: "Packaging unit", hi: "पैकेजिंग यूनिट", ta: "பேக்கேஜிங் தொழிற்சாலை", te: "ప్యాకేజింగ్ యూనిట్", bn: "প্যাকেজিং ইউনিট", mr: "पॅकेजिंग युनिट", kn: "ಪ್ಯಾಕೇಜಿಂಗ್ ಘಟಕ", pa: "ਪੈਕੇਜਿੰਗ ਯੂਨਿਟ" }, keywords: ["packaging", "packing", "पैकेजिंग"] },
+      { value: "food_processing", seg: "mfg", label: { en: "Food processing unit", hi: "फ़ूड प्रोसेसिंग यूनिट", ta: "உணவு பதப்படுத்தும் ஆலை", te: "ఫుడ్ ప్రాసెసింగ్ యూనిట్", bn: "খাদ্য প্রক্রিয়াকরণ ইউনিট", mr: "फूड प्रोसेसिंग युनिट", kn: "ಆಹಾರ ಸಂಸ್ಕರಣಾ ಘಟಕ", pa: "ਫੂਡ ਪ੍ਰੋਸੈਸਿੰਗ ਯੂਨਿਟ" }, keywords: ["food processing", "processing", "masala", "फूड"] },
     ],
   },
   {
@@ -680,12 +688,9 @@ export const FLOW: Step[] = [
       kn: "ಅಲ್ಲಿ ಎಷ್ಟು ಜನ ಕೆಲಸ ಮಾಡುತ್ತಾರೆ?",
       pa: "ਉੱਥੇ ਕਿੰਨੇ ਲੋਕ ਕੰਮ ਕਰਦੇ ਹਨ?",
     },
-    options: [
-      { value: "3", label: { en: "1–5" }, keywords: [], num: 3 },
-      { value: "12", label: { en: "6–20" }, keywords: [], num: 12 },
-      { value: "35", label: { en: "21–50" }, keywords: [], num: 35 },
-      { value: "80", label: { en: "50+" }, keywords: [], num: 80 },
-    ],
+    min: 1,
+    max: 500,
+    def: 5,
   },
   {
     key: "num_sites",
@@ -701,17 +706,14 @@ export const FLOW: Step[] = [
       kn: "ನಿಮ್ಮಲ್ಲಿ ಎಷ್ಟು ಸ್ಥಳಗಳಿವೆ?",
       pa: "ਤੁਹਾਡੇ ਕੋਲ ਕਿੰਨੀਆਂ ਥਾਵਾਂ ਹਨ?",
     },
-    options: [
-      { value: "1", label: { en: "1" }, keywords: [], num: 1 },
-      { value: "3", label: { en: "2–3" }, keywords: [], num: 3 },
-      { value: "6", label: { en: "4–10" }, keywords: [], num: 6 },
-      { value: "12", label: { en: "10+" }, keywords: [], num: 12 },
-    ],
+    min: 1,
+    max: 50,
+    def: 1,
   },
   {
     key: "city",
     field: "city",
-    kind: "text",
+    kind: "city",
     q: {
       en: "Which city are you in?",
       hi: "आप किस शहर में हैं?",
@@ -724,11 +726,26 @@ export const FLOW: Step[] = [
     },
   },
   {
+    key: "business",
+    field: "business",
+    kind: "name",
+    q: {
+      en: "What is your business called? Type it in English, as it appears on your GST certificate.",
+      hi: "आपके व्यवसाय का नाम क्या है? कृपया इसे अंग्रेज़ी में लिखें, जैसा आपके GST प्रमाणपत्र पर है।",
+      ta: "உங்கள் வணிகத்தின் பெயர் என்ன? உங்கள் GST சான்றிதழில் உள்ளபடி ஆங்கிலத்தில் எழுதுங்கள்.",
+      te: "మీ వ్యాపారం పేరు ఏమిటి? మీ GST సర్టిఫికెట్‌లో ఉన్నట్లుగా ఇంగ్లీష్‌లో టైప్ చేయండి.",
+      bn: "আপনার ব্যবসার নাম কী? আপনার GST সার্টিফিকেটে যেমন আছে, তেমনই ইংরেজিতে লিখুন।",
+      mr: "तुमच्या व्यवसायाचे नाव काय आहे? तुमच्या GST प्रमाणपत्रावर आहे तसे इंग्रजीत लिहा.",
+      kn: "ನಿಮ್ಮ ವ್ಯಾಪಾರದ ಹೆಸರೇನು? ನಿಮ್ಮ GST ಪ್ರಮಾಣಪತ್ರದಲ್ಲಿ ಇರುವಂತೆ ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ಬರೆಯಿರಿ.",
+      pa: "ਤੁਹਾਡੇ ਕਾਰੋਬਾਰ ਦਾ ਨਾਮ ਕੀ ਹੈ? ਆਪਣੇ GST ਸਰਟੀਫਿਕੇਟ ਵਾਂਗ ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਲਿਖੋ।",
+    },
+  },
+  {
     key: "needs",
-    field: "needs",
+    field: "need_tags",
     kind: "multi",
     q: {
-      en: "What do you need? Pick any that apply.",
+      en: "What would help your business most? Pick any that apply, or none.",
       hi: "आपको क्या चाहिए? जो लागू हो चुनें।",
       ta: "உங்களுக்கு என்ன தேவை? பொருந்துவதை தேர்ந்தெடுக்கவும்.",
       te: "మీకు ఏమి కావాలి? వర్తించేవి ఎంచుకోండి.",
@@ -737,13 +754,11 @@ export const FLOW: Step[] = [
       kn: "ನಿಮಗೆ ಏನು ಬೇಕು? ಅನ್ವಯಿಸುವದನ್ನು ಆಯ್ಕೆಮಾಡಿ.",
       pa: "ਤੁਹਾਨੂੰ ਕੀ ਚਾਹੀਦਾ ਹੈ? ਲਾਗੂ ਹੋਣ ਵਾਲੇ ਚੁਣੋ।",
     },
-    options: [
-      { value: "connectivity", label: { en: "Connectivity / internet", hi: "कनेक्टिविटी / इंटरनेट", ta: "இணைப்பு / இணையம்", te: "కనెక్టివిటీ / ఇంటర్నెట్", bn: "কানেক্টিভিটি / ইন্টারনেট", mr: "कनेक्टिव्हिटी / इंटरनेट", kn: "ಕನೆಕ್ಟಿವಿಟಿ / ಇಂಟರ್ನೆಟ್", pa: "ਕਨੈਕਟੀਵਿਟੀ / ਇੰਟਰਨੈੱਟ" }, keywords: ["internet", "connectivity", "wifi", "broadband"] },
-      { value: "communication", label: { en: "Communication / calls", hi: "कम्युनिकेशन / कॉल", ta: "தொடர்பு / அழைப்பு", te: "కమ్యూనికేషన్ / కాల్స్", bn: "যোগাযোগ / কল", mr: "कम्युनिकेशन / कॉल", kn: "ಸಂವಹನ / ಕರೆಗಳು", pa: "ਸੰਚਾਰ / ਕਾਲਾਂ" }, keywords: ["call", "phone", "sim", "communication"] },
-      { value: "cloud", label: { en: "Cloud & productivity", hi: "क्लाउड व प्रोडक्टिविटी", ta: "கிளவுட் & உற்பத்தித்திறன்", te: "క్లౌడ్ & ప్రొడక్టివిటీ", bn: "ক্লাউড ও প্রোডাক্টিভিটি", mr: "क्लाउड व प्रॉडक्टिव्हिटी", kn: "ಕ್ಲೌಡ್ ಮತ್ತು ಉತ್ಪಾದಕತೆ", pa: "ਕਲਾਉਡ ਤੇ ਉਤਪਾਦਕਤਾ" }, keywords: ["cloud", "email", "storage", "website"] },
-      { value: "security", label: { en: "Security", hi: "सुरक्षा", ta: "பாதுகாப்பு", te: "భద్రత", bn: "নিরাপত্তা", mr: "सुरक्षा", kn: "ಭದ್ರತೆ", pa: "ਸੁਰੱਖਿਆ" }, keywords: ["security", "firewall", "antivirus", "सुरक्षा"] },
-      { value: "iot", label: { en: "IoT & devices", hi: "IoT व डिवाइस", ta: "IoT & சாதனங்கள்", te: "IoT & పరికరాలు", bn: "IoT ও ডিভাইস", mr: "IoT व डिव्हाइस", kn: "IoT ಮತ್ತು ಸಾಧನಗಳು", pa: "IoT ਤੇ ਡਿਵਾਈਸ" }, keywords: ["iot", "cctv", "camera", "tracker", "sensor"] },
-    ],
+    options: NEED_GROUPS.map((g) => ({
+      value: g.key,
+      label: Object.fromEntries((Object.keys(MORE) as Lang[]).map((l) => [l, MORE[l][`ng_${g.key}`]])) as L,
+      keywords: g.keywords,
+    })),
   },
   {
     key: "gstin_status",
@@ -774,7 +789,6 @@ export function question(step: Step, lang: Lang): string {
   return pick(step.q, lang);
 }
 
-// Tokens too generic to match a label on (connectors, not answers).
 const STOP_WORDS = new Set(["the", "and", "or", "not", "sure", "have", "it"]);
 
 export function matchOption(step: Step, text: string, lang: Lang = "en"): string | null {
@@ -785,12 +799,15 @@ export function matchOption(step: Step, text: string, lang: Lang = "en"): string
   if (!s) return null;
   const words = new Set(s.split(" "));
 
-  // 1) Curated keywords (any language).
+  let best: { v: string; len: number } | null = null;
   for (const o of step.options ?? []) {
-    if (o.keywords.some((k) => s.includes(k.toLowerCase()))) return o.value;
+    for (const k of o.keywords) {
+      const kk = k.toLowerCase();
+      const hit = kk.length <= 3 ? words.has(kk) : s.includes(kk);
+      if (hit && (!best || kk.length > best.len)) best = { v: o.value, len: kk.length };
+    }
   }
-  // 2) The option's own label words, in the user's language and English, so an answer spoken in
-  //    any language still maps to the chip the person would have tapped.
+  if (best) return best.v;
   for (const o of step.options ?? []) {
     const labels = [o.label[lang], o.label.en].filter(Boolean) as string[];
     for (const lab of labels) {
@@ -805,7 +822,6 @@ export function matchOption(step: Step, text: string, lang: Lang = "en"): string
   return null;
 }
 
-// Spelled-out numbers (English + Hindi) so "five people" / "दो" also work.
 const WORD_NUM: Record<string, number> = {
   one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
   eleven: 11, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, forty: 40, fifty: 50, hundred: 100,
@@ -820,7 +836,6 @@ const WORD_NUM: Record<string, number> = {
   "ਇੱਕ": 1, "ਦੋ": 2, "ਤਿੰਨ": 3, "ਚਾਰ": 4, "ਪੰਜ": 5, "ਛੇ": 6, "ਸੱਤ": 7, "ਅੱਠ": 8, "ਨੌਂ": 9, "ਦਸ": 10,
 };
 
-// Map Indic digits (Devanagari, Bengali, Gurmukhi, Gujarati, Tamil, Telugu, Kannada, Malayalam) to 0-9.
 function normDigits(s: string): string {
   const bases = [0x0966, 0x09e6, 0x0a66, 0x0ae6, 0x0b66, 0x0be6, 0x0c66, 0x0ce6, 0x0d66];
   return s.replace(/[०-൯]/gu, (ch) => {
