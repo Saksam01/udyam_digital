@@ -1,0 +1,14 @@
+{
+  "name": "Udyam Digital by Accel Business",
+  "short_name": "Udyam Digital",
+  "description": "Find the right business bundle, verify in minutes and track your setup.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f3f5",
+  "theme_color": "#E4141B",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

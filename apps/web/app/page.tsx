@@ -1,122 +1,234 @@
 "use client";
-import { useState } from "react";
-import { Profile, Quote } from "@/lib/api";
-import { Lang, LANGS, t } from "@/lib/i18n";
-import AdvisorChat from "@/components/AdvisorChat";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { House, MessageSquareText, Package, ShieldCheck } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { api, Order, Profile, Quote, orderKey, subscribe } from "@/lib/api";
+import { Lang, t } from "@/lib/i18n";
+import AdvisorChat, { ProceedMeta } from "@/components/AdvisorChat";
 import KycPanel from "@/components/KycPanel";
 import Tracker from "@/components/Tracker";
+import Home, { Tab } from "@/components/Home";
 
-type Tab = "advisor" | "kyc" | "tracker";
+function safeGet(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function safeSet(key: string, value: string | null) {
+  try {
+    if (value === null) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, value);
+  } catch {
+    /* storage unavailable */
+  }
+}
 
 export default function Page() {
-  const [tab, setTab] = useState<Tab>("advisor");
+  const [tab, setTab] = useState<Tab>("home");
   const [lang, setLang] = useState<Lang>("en");
   const [, setProfile] = useState<Profile | null>(null);
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [order, setOrderState] = useState<Order | null>(null);
+  const [sessionId, setSessionId] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState("");
+  const [startMode, setStartMode] = useState<"text" | "voice" | null>(null);
+  const prevStatus = useRef<string | null>(null);
 
-  const tabs: { id: Tab; label: string; icon: JSX.Element }[] = [
-    { id: "advisor", label: t(lang, "tab_advisor"), icon: <ChatIcon /> },
-    { id: "kyc", label: t(lang, "tab_kyc"), icon: <ShieldIcon /> },
-    { id: "tracker", label: t(lang, "tab_tracker"), icon: <BoxIcon /> },
+  const setOrder = useCallback((o: Order | null) => {
+    setOrderState(o);
+    safeSet("udyam_order", o ? o.order_id : null);
+  }, []);
+
+  const newSession = () => {
+    const sid = "web-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+    safeSet("udyam_sid", sid);
+    return sid;
+  };
+
+  const startFresh = useCallback(() => {
+    safeSet("udyam_order", null);
+    setOrderState(null);
+    setQuote(null);
+    setProfile(null);
+    prevStatus.current = null;
+    setSessionId(newSession());
+    setTab("home");
+  }, []);
+
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("new") === "1") {
+        safeSet("udyam_order", null);
+        safeSet("udyam_sid", null);
+        url.searchParams.delete("new");
+        window.history.replaceState(null, "", url.pathname + url.search);
+      }
+    } catch {
+      /* ignore */
+    }
+    let sid = safeGet("udyam_sid");
+    if (!sid) {
+      sid = "web-" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      safeSet("udyam_sid", sid);
+    }
+    setSessionId(sid);
+    const saved = safeGet("udyam_order");
+    if (saved) {
+      api
+        .order(saved)
+        .then((o) => setOrderState(o))
+        .catch(() => safeSet("udyam_order", null));
+    }
+    if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }, []);
+
+  const orderId = order?.order_id;
+  useEffect(() => {
+    if (!orderId) return;
+    const refresh = () => api.order(orderId).then(setOrderState).catch(() => {});
+    const stop = subscribe(`/api/v1/orders/${orderId}/stream?k=${encodeURIComponent(orderKey(orderId))}`, refresh);
+    const onVis = () => {
+      if (!document.hidden) refresh();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [orderId]);
+
+  useEffect(() => {
+    const s = order?.status ?? null;
+    const was = prevStatus.current;
+    prevStatus.current = s;
+    const passed = s === "approved" || s === "in_progress" || s === "live";
+    const wasPassed = was === "approved" || was === "in_progress" || was === "live";
+    if (passed && !wasPassed && was !== null) {
+      setToast(t(lang, "approvedMsg"));
+      const h = setTimeout(() => {
+        setTab("tracker");
+        setToast("");
+      }, 2200);
+      return () => clearTimeout(h);
+    }
+  }, [order?.status, lang]);
+
+  async function startOrder(q: Quote, profile: Profile, meta: ProceedMeta) {
+    setCreating(true);
+    setError("");
+    try {
+      const o = await api.createOrder({
+        profile,
+        items: q.lines.map((l) => ({ product_id: l.product_id, qty: l.qty })),
+        business: meta.business,
+        lead_id: meta.leadId,
+        session_id: sessionId,
+        lang,
+      });
+      setOrder(o);
+      setTab("kyc");
+    } catch (e) {
+      const err = e as { status?: number; message?: string };
+      if (err.status === 422 && /english/i.test(err.message ?? "")) setError(t(lang, "nameEnglish"));
+      else if (err.status === 409) setError(err.message ?? t(lang, "orderFail"));
+      else setError(t(lang, "orderFail"));
+      setTimeout(() => setError(""), 4000);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  function startAdvisor(mode: "text" | "voice") {
+    setStartMode(mode);
+    setTab("advisor");
+  }
+
+  const needsKyc = order?.status === "awaiting_kyc" || order?.status === "kyc_rejected";
+  const tabs: { id: Tab; label: string; icon: LucideIcon; dot?: boolean }[] = [
+    { id: "home", label: t(lang, "tab_home"), icon: House },
+    { id: "advisor", label: t(lang, "step_plan"), icon: MessageSquareText },
+    { id: "kyc", label: t(lang, "step_verify"), icon: ShieldCheck, dot: needsKyc },
+    { id: "tracker", label: t(lang, "step_track"), icon: Package },
   ];
+  const active = tabs.findIndex((x) => x.id === tab);
 
   return (
     <main className="phone">
-      <header className="bg-gradient-to-br from-[#ED1C24] to-[#B3121A] px-4 pb-4 pt-5 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AccelMark />
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-extrabold tracking-tight">{t(lang, "brand")}</span>
-              <span className="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold uppercase">
-                {t(lang, "brandSub")}
-              </span>
-            </div>
-          </div>
-          <select
-            value={lang}
-            onChange={(e) => setLang(e.target.value as Lang)}
-            className="rounded-full bg-white/15 px-2.5 py-1 text-xs font-medium text-white outline-none"
+      {(toast || creating || error) && (
+        <div className="pointer-events-none absolute inset-x-3 top-3 z-40">
+          <div
+            className={`drop-in rounded-2xl px-4 py-3 text-center text-[14px] font-semibold text-white shadow-float ${
+              error ? "bg-danger-600" : toast ? "bg-success-600" : "bg-ink-900"
+            }`}
           >
-            {LANGS.map((l) => (
-              <option key={l.code} value={l.code} className="text-slate-800">
-                {l.label}
-              </option>
-            ))}
-          </select>
+            {error || toast || t(lang, "creating")}
+          </div>
         </div>
-        <h1 className="mt-2 text-lg font-bold">{t(lang, "appName")}</h1>
-        <p className="text-xs text-red-100">{t(lang, "tagline")}</p>
-      </header>
+      )}
 
-      <div className="flex-1 overflow-hidden px-3 py-3">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
+        <div className={tab === "home" ? "scroll-area h-full overflow-y-auto" : "hidden"}>
+          <Home lang={lang} setLang={setLang} order={order} quote={quote} onStart={startAdvisor} go={setTab} onNew={startFresh} />
+        </div>
         <div className={tab === "advisor" ? "h-full" : "hidden"}>
-          <AdvisorChat
-            key={`advisor-${lang}`}
-            lang={lang}
-            quote={quote}
-            setQuote={setQuote}
-            setProfile={setProfile}
-            onProceed={() => setTab("kyc")}
-          />
+          {sessionId && (
+            <AdvisorChat
+              key={`advisor-${lang}-${sessionId}`}
+              lang={lang}
+              setLang={setLang}
+              sessionId={sessionId}
+              quote={quote}
+              setQuote={setQuote}
+              setProfile={setProfile}
+              onProceed={startOrder}
+              startMode={startMode}
+              onStartHandled={() => setStartMode(null)}
+              onHome={() => setTab("home")}
+              hasOrder={!!order}
+              goVerify={() => setTab("kyc")}
+            />
+          )}
         </div>
-        <div className={tab === "kyc" ? "h-full overflow-y-auto" : "hidden"}>
-          <KycPanel lang={lang} />
+        <div className={tab === "kyc" ? "scroll-area h-full overflow-y-auto" : "hidden"}>
+          <KycPanel key={order?.order_id ?? "none"} lang={lang} setLang={setLang} order={order} onOrder={setOrder} onTrack={() => setTab("tracker")} onPlan={() => setTab("advisor")} />
         </div>
-        <div className={tab === "tracker" ? "h-full overflow-y-auto" : "hidden"}>
-          <Tracker quote={quote} lang={lang} />
+        <div className={tab === "tracker" ? "scroll-area h-full overflow-y-auto" : "hidden"}>
+          <Tracker order={order} lang={lang} setLang={setLang} onVerify={() => setTab("kyc")} onPlan={() => setTab("advisor")} />
         </div>
       </div>
 
-      <nav className="grid grid-cols-3 border-t border-slate-200 bg-white">
-        {tabs.map((tb) => (
-          <button
-            key={tb.id}
-            onClick={() => setTab(tb.id)}
-            className={`flex flex-col items-center gap-0.5 py-2.5 text-[11px] font-medium ${
-              tab === tb.id ? "text-[#ED1C24]" : "text-slate-400"
-            }`}
-          >
-            {tb.icon}
-            {tb.label}
-          </button>
-        ))}
+      <nav className="absolute inset-x-3 bottom-3 z-30 rounded-[24px] bg-white p-1.5 shadow-float pb-[max(0.375rem,env(safe-area-inset-bottom))]">
+        <div className="relative grid grid-cols-4">
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-0 rounded-[18px] bg-brand-600 transition-[left] duration-300 ease-out"
+            style={{ left: `calc(${active * 25}% + 2px)`, width: "calc(25% - 4px)" }}
+          />
+          {tabs.map((tb) => {
+            const on = tab === tb.id;
+            const Icon = tb.icon;
+            return (
+              <button
+                key={tb.id}
+                onClick={() => setTab(tb.id)}
+                aria-current={on ? "page" : undefined}
+                className={`press relative z-10 flex h-14 flex-col items-center justify-center gap-0.5 text-[12px] font-semibold transition-colors ${
+                  on ? "text-white" : "text-ink-500"
+                }`}
+              >
+                <Icon size={22} strokeWidth={on ? 2.2 : 1.9} />
+                {tb.label}
+                {tb.dot && !on && <span className="absolute right-[30%] top-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-brand-500" />}
+              </button>
+            );
+          })}
+        </div>
       </nav>
     </main>
-  );
-}
-
-function AccelMark() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" className="shrink-0">
-      <rect width="32" height="32" rx="8" fill="#ffffff" />
-      <path d="M8.5 24 L16 8 L23.5 24" fill="none" stroke="#ED1C24" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M12 18.5 H20" stroke="#ED1C24" strokeWidth="3.2" strokeLinecap="round" />
-      <circle cx="24.5" cy="8.5" r="1.8" fill="#ED1C24" />
-    </svg>
-  );
-}
-
-function ChatIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
-function ShieldIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  );
-}
-function BoxIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-      <line x1="12" y1="22.08" x2="12" y2="12" />
-    </svg>
   );
 }
