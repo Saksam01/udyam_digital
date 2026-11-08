@@ -91,7 +91,8 @@ def _assemble(docs: dict, blurred: set[str]) -> dict:
 
 
 def _vision_fallback(files: dict[str, bytes], docs: dict, problems: list) -> None:
-    if not llm.available():
+    import os
+    if os.getenv("KYC_VISION_FALLBACK") != "1" or not llm.available():
         return
     have = set(docs)
     for p in list(problems):
