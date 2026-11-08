@@ -215,7 +215,10 @@ export default function AdvisorChat({
     if (st.kind === "number") setNumVal(st.def ?? 1);
     const q = question(st, lang);
     add("bot", q);
-    if (st.kind === "select") return;
+    if (st.kind === "select") {
+      if (modeRef.current === "voice") speakQ(q, () => startListen());
+      return;
+    }
     if (st.kind === "name") return;
     if (modeRef.current === "voice") {
       if (FLOW[i].kind === "multi") speakQ(q);
@@ -676,7 +679,7 @@ export default function AdvisorChat({
                 <button
                   onClick={() => startListen()}
                   aria-label={t(lang, "tap_speak")}
-                  disabled={!mounted || isMulti || isSelect || isName}
+                  disabled={!mounted || isMulti || isName}
                   className={`press flex h-12 w-12 shrink-0 items-center justify-center rounded-full disabled:opacity-40 ${
                     mode === "voice" ? "bg-brand-600 text-white" : "bg-brand-50 text-brand-600"
                   }`}
