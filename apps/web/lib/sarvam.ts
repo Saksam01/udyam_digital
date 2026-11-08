@@ -153,6 +153,7 @@ export async function sarvamListen(locale: string): Promise<ListenResult> {
   const stream = await openMic();
   const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
   const ctx = new AudioCtx();
+  if (ctx.state === "suspended") await ctx.resume().catch(() => {});
   const analyser = ctx.createAnalyser();
   analyser.fftSize = 1024;
   ctx.createMediaStreamSource(stream).connect(analyser);
@@ -218,7 +219,9 @@ export async function sarvamListen(locale: string): Promise<ListenResult> {
   const fd = new FormData();
   fd.append("audio", wav, "answer.wav");
   fd.append("lang", locale);
-  const r = await fetch(`${API_BASE}/api/v1/voice/stt`, { method: "POST", body: fd });
+  const ctl = new AbortController();
+  const stop = setTimeout(() => ctl.abort(), 15000);
+  const r = await fetch(`${API_BASE}/api/v1/voice/stt`, { method: "POST", body: fd, signal: ctl.signal }).finally(() => clearTimeout(stop));
   if (!r.ok) {
     let detail = "";
     try {

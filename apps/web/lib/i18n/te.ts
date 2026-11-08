@@ -67,7 +67,7 @@ const te: Record<string, string> = {
   askPartner: "స్థానిక భాగస్వామి నాకు కాల్ చేయాలి",
   partnerCard: "మీ స్థానిక భాగస్వామి",
   tab_home: "హోమ్",
-  home_greet: "నమస్తే,",
+  home_greet: "తిరిగి స్వాగతం,",
   home_guest: "Accel Business కు స్వాగతం",
   home_sub: "మీ వ్యాపారానికి తగిన కనెక్టివిటీ, సరైన ధరలో.",
   home_start_title: "సుమారు 2 నిమిషాల్లో సరైన ప్లాన్ కనుగొనండి",

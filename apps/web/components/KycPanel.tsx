@@ -276,6 +276,8 @@ export default function KycPanel({
       </Hero>
 
       <div className="mt-4 space-y-4 px-4">
+        {showUpload && <SaveCard lang={lang} order={order} />}
+
         {approved && (
           <div className="enter rounded-card bg-success-50 p-5">
             <div className="flex items-start gap-3">
@@ -498,8 +500,6 @@ export default function KycPanel({
             )}
           </Card>
         )}
-
-        {showUpload && <SaveCard lang={lang} order={order} />}
 
         {cases.length > 0 && showUpload && (
           <Card className={`p-4 transition-opacity ${consented ? "" : "pointer-events-none select-none opacity-45 grayscale"}`} aria-disabled={!consented}>

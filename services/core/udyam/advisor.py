@@ -201,7 +201,11 @@ def _localized_why(r: dict, lang: str) -> str | None:
     text = llm.explain(facts, lang)
     if not text or _NUMERIC.search(text) or len(text) > 400:
         return None
-    return text.strip()
+    text = _GREETING.sub("", text.strip()).strip()
+    return (text[:1].upper() + text[1:]) if text else None
+
+
+_GREETING = re.compile(r"^\s*(namaste|namaskar|hello|hi|vanakkam|नमस्ते|नमस्कार|வணக்கம்|నమస్తే|నమస్కారం|নমস্কার|নমস্তে|ನಮಸ್ಕಾರ|ನಮಸ್ತೆ|ਸਤ ਸ੍ਰੀ ਅਕਾਲ|ਨਮਸਤੇ)(\s*ji|\s*जी)?\s*[!,.।]*\s*", re.I)
 
 
 _MISSING_Q = {

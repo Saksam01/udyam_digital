@@ -67,7 +67,7 @@ const ta: Record<string, string> = {
   askPartner: "உள்ளூர் கூட்டாளர் என்னை அழைக்கட்டும்",
   partnerCard: "உங்கள் உள்ளூர் கூட்டாளர்",
   tab_home: "முகப்பு",
-  home_greet: "வணக்கம்,",
+  home_greet: "மீண்டும் வருக,",
   home_guest: "Accel Business-க்கு வரவேற்கிறோம்",
   home_sub: "உங்கள் வணிகத்துக்கேற்ற இணைப்பு, சரியான விலையில்.",
   home_start_title: "சுமார் 2 நிமிடங்களில் சரியான திட்டத்தைக் கண்டறியுங்கள்",

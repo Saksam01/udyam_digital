@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "Udyam Digital, Accel Business",
   description: "Discover, buy and activate business connectivity in one sitting.",
   manifest: "/manifest.webmanifest",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  icons: { icon: "/icon.svg", apple: "/apple-touch-icon.png" },
   appleWebApp: { capable: true, title: "Udyam Digital", statusBarStyle: "default" },
 };
 

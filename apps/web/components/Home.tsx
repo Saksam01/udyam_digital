@@ -26,6 +26,7 @@ import { useState } from "react";
 import { Order, Quote } from "@/lib/api";
 import { Lang, t } from "@/lib/i18n";
 import LangPill from "./LangPill";
+import InstallCard from "./InstallCard";
 import { AccelLogo } from "./Logo";
 import { Card, Chip, ChipTone, CountUp, Hero, IconTile, LiveDot, Money, Ring, SectionTitle, Segments, Tone, btn, inr } from "./ui";
 
@@ -163,6 +164,8 @@ export default function Home({
             </div>
           </section>
         )}
+
+        <InstallCard lang={lang} />
 
         <section>
           <SectionTitle>{t(lang, "quickActions")}</SectionTitle>

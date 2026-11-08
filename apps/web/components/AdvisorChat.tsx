@@ -80,6 +80,7 @@ export default function AdvisorChat({
   const [qProfile, setQProfile] = useState<Profile | null>(null);
   const leadRef = useRef<string | undefined>(undefined);
   const answeredRef = useRef<Set<string>>(new Set());
+  const retryRef = useRef(0);
 
   const idRef = useRef(0);
   const initRef = useRef(false);
@@ -148,7 +149,20 @@ export default function AdvisorChat({
   }
 
   async function listen(): Promise<ListenResult> {
-    if (sarvamRef.current) return sarvamListen(locale);
+    if (sarvamRef.current) {
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const limit = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          cancelListen();
+          reject(new Error("timeout"));
+        }, 25000);
+      });
+      try {
+        return await Promise.race([sarvamListen(locale), limit]);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
     try {
       const tr = await listenOnce(locale);
       return { transcript: tr.trim(), heardSpeech: !!tr.trim() };
@@ -158,12 +172,20 @@ export default function AdvisorChat({
     }
   }
 
-  function fallbackToText(msgKey: string) {
-    if (modeRef.current !== "text") {
-      modeRef.current = "text";
-      setMode("text");
+  function voiceMiss(failed: boolean) {
+    const st = FLOW[stepRef.current];
+    if (!st) return;
+    const canRetry = !failed && retryRef.current < 1 && st.kind !== "multi" && st.kind !== "name";
+    if (canRetry && modeRef.current === "voice") {
+      retryRef.current++;
+      const msg = t(lang, "sayAgain");
+      add("bot", msg);
+      speakQ(msg, () => startListen());
+      return;
     }
-    add("bot", t(lang, msgKey));
+    add("bot", t(lang, "micFail"));
+    if (st.kind === "select") setSheet(true);
+    if (st.kind === "city") setCitySheet(true);
   }
 
   function startListen() {
@@ -174,22 +196,13 @@ export default function AdvisorChat({
       .then((res) => {
         if (id !== listenId.current) return;
         setListening(false);
-        if (res.transcript) {
-          handleText(res.transcript);
-        } else if (!res.heardSpeech) {
-          if (modeRef.current !== "text") {
-            modeRef.current = "text";
-            setMode("text");
-          }
-        } else {
-          fallbackToText("notUnderstood");
-        }
+        if (res.transcript) handleText(res.transcript);
+        else voiceMiss(false);
       })
-      .catch((e: unknown) => {
+      .catch(() => {
         if (id !== listenId.current) return;
         setListening(false);
-        console.warn("voice error:", e);
-        fallbackToText("voiceUnavailable");
+        voiceMiss(true);
       });
   }
 
@@ -197,7 +210,7 @@ export default function AdvisorChat({
     modeRef.current = m;
     setMode(m);
     add("user", m === "voice" ? t(lang, "opt_speak") : t(lang, "opt_type"));
-    add("bot", t(lang, "oneLine"));
+    if (m === "text") add("bot", t(lang, "oneLine"));
     askStep(0);
   }
 
@@ -205,6 +218,7 @@ export default function AdvisorChat({
     let i = from;
     while (i < FLOW.length && answeredRef.current.has(FLOW[i].field)) i++;
     stepRef.current = i;
+    retryRef.current = 0;
     setStep(i);
     if (i >= FLOW.length) {
       recommend();
@@ -219,17 +233,16 @@ export default function AdvisorChat({
       if (modeRef.current === "voice") speakQ(q, () => startListen());
       return;
     }
-    if (st.kind === "name") return;
     if (modeRef.current === "voice") {
-      if (FLOW[i].kind === "multi") speakQ(q);
+      if (st.kind === "multi" || st.kind === "name") speakQ(q);
       else speakQ(q, () => startListen());
     }
   }
 
   function warmVoice() {
     if (!sarvamRef.current) return;
-    const texts = FLOW.filter((s) => s.kind !== "select" && s.kind !== "name").map((s) => question(s, lang));
-    sarvamWarm([...texts, t(lang, "recommending"), t(lang, "notUnderstood")], locale);
+    const texts = FLOW.map((s) => question(s, lang));
+    sarvamWarm([...texts, t(lang, "recommending"), t(lang, "sayAgain")], locale);
   }
 
   function record(field: string, value: string | number | string[]) {
@@ -402,10 +415,6 @@ export default function AdvisorChat({
       add("user", input);
       add("bot", t(lang, "cityEnglish"));
       setCitySheet(true);
-      if (modeRef.current === "voice") {
-        modeRef.current = "text";
-        setMode("text");
-      }
       return;
     }
     if (s.kind === "number") {
@@ -420,11 +429,8 @@ export default function AdvisorChat({
     }
     if (s.kind === "select" && (await absorb(input))) return;
     add("user", input);
-    add("bot", t(lang, "notUnderstood"));
-    if (modeRef.current === "voice") {
-      modeRef.current = "text";
-      setMode("text");
-    }
+    if (modeRef.current === "voice") voiceMiss(false);
+    else add("bot", t(lang, "notUnderstood"));
   }
 
   const s = FLOW[stepRef.current];
@@ -695,8 +701,6 @@ export default function AdvisorChat({
                     listenId.current++;
                     cancelListen();
                     setListening(false);
-                    modeRef.current = "text";
-                    setMode("text");
                   }}
                   lang={isName ? "en" : undefined}
                   autoCapitalize={isName ? "words" : undefined}

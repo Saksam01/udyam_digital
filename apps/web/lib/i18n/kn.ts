@@ -67,7 +67,7 @@ const kn: Record<string, string> = {
   askPartner: "ಸ್ಥಳೀಯ ಪಾಲುದಾರರು ನನಗೆ ಕರೆ ಮಾಡಲಿ",
   partnerCard: "ನಿಮ್ಮ ಸ್ಥಳೀಯ ಪಾಲುದಾರ",
   tab_home: "ಮುಖಪುಟ",
-  home_greet: "ನಮಸ್ಕಾರ,",
+  home_greet: "ಮತ್ತೆ ಸ್ವಾಗತ,",
   home_guest: "Accel Business ಗೆ ಸ್ವಾಗತ",
   home_sub: "ನಿಮ್ಮ ವ್ಯಾಪಾರಕ್ಕೆ ತಕ್ಕ ಸಂಪರ್ಕ, ಸರಿಯಾದ ಬೆಲೆಯಲ್ಲಿ.",
   home_start_title: "ಸುಮಾರು 2 ನಿಮಿಷಗಳಲ್ಲಿ ಸರಿಯಾದ ಪ್ಲಾನ್ ಹುಡುಕಿ",

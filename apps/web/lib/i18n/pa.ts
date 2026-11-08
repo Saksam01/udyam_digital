@@ -67,7 +67,7 @@ const pa: Record<string, string> = {
   askPartner: "ਸਥਾਨਕ ਪਾਰਟਨਰ ਮੈਨੂੰ ਫ਼ੋਨ ਕਰੇ",
   partnerCard: "ਤੁਹਾਡਾ ਸਥਾਨਕ ਪਾਰਟਨਰ",
   tab_home: "ਹੋਮ",
-  home_greet: "ਸਤ ਸ੍ਰੀ ਅਕਾਲ,",
+  home_greet: "ਮੁੜ ਜੀ ਆਇਆਂ ਨੂੰ,",
   home_guest: "Accel Business ਵਿੱਚ ਜੀ ਆਇਆਂ ਨੂੰ",
   home_sub: "ਤੁਹਾਡੇ ਕਾਰੋਬਾਰ ਮੁਤਾਬਕ ਕਨੈਕਟੀਵਿਟੀ, ਸਹੀ ਕੀਮਤ 'ਤੇ।",
   home_start_title: "ਲਗਭਗ 2 ਮਿੰਟ ਵਿੱਚ ਸਹੀ ਪਲਾਨ ਲੱਭੋ",

@@ -88,7 +88,15 @@ export function ResumeCard({ lang, onOrder }: { lang: Lang; onOrder: (o: Order) 
 export function SaveCard({ lang, order }: { lang: Lang; order: Order }) {
   const code = savedCode(order.order_id);
   const [phone, setPhone] = useState("");
+  const [savedPhone, setSavedPhone] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    try {
+      setSavedPhone(window.localStorage.getItem(`udyam_phone_${order.order_id}`) ?? "");
+    } catch {
+      /* storage unavailable */
+    }
+  }, [order.order_id]);
   const [busy, setBusy] = useState(false);
   if (!code) return null;
 
@@ -99,6 +107,13 @@ export function SaveCard({ lang, order }: { lang: Lang; order: Order }) {
     setBusy(true);
     try {
       await api.savePhone(order.order_id, phone);
+      const digits = phone.replace(/\D/g, "").slice(-10);
+      try {
+        window.localStorage.setItem(`udyam_phone_${order.order_id}`, digits);
+      } catch {
+        /* storage unavailable */
+      }
+      setSavedPhone(digits);
       setMsg({ ok: true, text: t(lang, "save_phone_ok") });
     } catch {
       setMsg({ ok: false, text: t(lang, "save_phone_bad") });
@@ -130,6 +145,9 @@ export function SaveCard({ lang, order }: { lang: Lang; order: Order }) {
         <MessageCircle size={17} />
         {t(lang, "save_share")}
       </a>
+      {savedPhone && !msg ? (
+        <p className="mt-3 text-[13px] font-medium text-success-600">{t(lang, "save_phone_ok")} (+91 ••••••{savedPhone.slice(-4)})</p>
+      ) : (
       <div className="mt-3 flex items-center gap-2">
         <label className="flex h-11 min-w-0 flex-1 items-center gap-2 rounded-btn bg-surface-50 px-3 ring-1 ring-line-200 focus-within:ring-2 focus-within:ring-brand-500">
           <Smartphone size={16} className="shrink-0 text-ink-500" />
@@ -146,6 +164,7 @@ export function SaveCard({ lang, order }: { lang: Lang; order: Order }) {
           {t(lang, "save_phone_btn")}
         </button>
       </div>
+      )}
       {msg && <p className={`mt-2 text-[12px] font-medium ${msg.ok ? "text-success-600" : "text-danger-600"}`}>{msg.text}</p>}
     </Card>
   );

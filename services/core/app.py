@@ -50,6 +50,8 @@ def _ticker():
 def _boot():
     threading.Thread(target=crm.ensure_seed, daemon=True).start()
     threading.Thread(target=_ticker, daemon=True).start()
+    if voice.enabled():
+        voice.warm([("ठीक है।", "hi-IN")])
 
 
 class Profile(BaseModel):

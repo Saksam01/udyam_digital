@@ -3,6 +3,14 @@ import type { Lang } from "../i18n";
 type D = Record<string, string>;
 
 const en: D = {
+  install_title: "Install the app",
+  install_sub: "Opens like an app, no Play Store needed.",
+  install_ios: "Tap Share, then Add to Home Screen.",
+  install_btn: "Install",
+  welcome: "I'm your Accel Business advisor. A few quick questions and I'll suggest the right bundle, in your language, by voice or text.",
+  home_greet: "Welcome back,",
+  sayAgain: "Sorry, I didn't catch that. Please say it again.",
+  micFail: "I couldn't get that by voice. Please pick from the options, or tap the mic to try again.",
   home_start_body: "Tell us about your business in one line, by voice or text, or answer a few quick taps. You get one exact monthly price.",
   neededFor: "Needed for {x}",
   addsAlso: "Also adds {x}, which it needs",
@@ -13,7 +21,7 @@ const en: D = {
   resume_ref: "Order ID (ACC-…) or mobile number",
   resume_code: "6-digit code",
   resume_btn: "Continue",
-  resume_fail: "We could not find an application with these details. Check the code and try again.",
+  resume_fail: "We could not find it. Check the 6-digit code. If you did not save a mobile number, use the order ID (ACC-…) instead.",
   resume_many: "Too many attempts. Please try again in 15 minutes.",
   or_new: "New here?",
   save_title: "Save this to continue later",
@@ -29,6 +37,14 @@ const en: D = {
 };
 
 const hi: D = {
+  install_title: "ऐप इंस्टॉल करें",
+  install_sub: "Play Store के बिना, ऐप की तरह खुलेगा।",
+  install_ios: "Share दबाएँ, फिर Add to Home Screen चुनें।",
+  install_btn: "इंस्टॉल",
+  welcome: "मैं आपका Accel Business सलाहकार हूँ। कुछ छोटे सवालों के बाद मैं आपकी भाषा में, बोलकर या लिखकर, सही बंडल सुझाऊँगा।",
+  home_greet: "फिर से स्वागत है,",
+  sayAgain: "माफ़ कीजिए, समझ नहीं आया। कृपया फिर से बोलिए।",
+  micFail: "आवाज़ से समझ नहीं पाया। कृपया विकल्पों में से चुनें, या फिर से कोशिश करने के लिए माइक दबाएँ।",
   home_start_body: "बोलकर या लिखकर एक लाइन में अपने व्यवसाय के बारे में बताइए, या कुछ आसान सवालों पर टैप करें। आपको एक तय मासिक दाम मिलेगा।",
   neededFor: "{x} के लिए ज़रूरी",
   addsAlso: "इसके लिए ज़रूरी {x} भी जुड़ेगा",
@@ -39,7 +55,7 @@ const hi: D = {
   resume_ref: "ऑर्डर ID (ACC-…) या मोबाइल नंबर",
   resume_code: "6 अंकों का कोड",
   resume_btn: "जारी रखें",
-  resume_fail: "इन जानकारियों से कोई आवेदन नहीं मिला। कोड जाँचकर फिर कोशिश करें।",
+  resume_fail: "आवेदन नहीं मिला। 6 अंकों का कोड जाँचें। अगर आपने मोबाइल नंबर सेव नहीं किया था, तो ऑर्डर ID (ACC-…) डालें।",
   resume_many: "बहुत ज़्यादा कोशिशें। 15 मिनट बाद फिर कोशिश करें।",
   or_new: "नए हैं?",
   save_title: "बाद में जारी रखने के लिए सहेजें",
@@ -55,6 +71,14 @@ const hi: D = {
 };
 
 const ta: D = {
+  install_title: "ஆப்பை நிறுவுங்கள்",
+  install_sub: "Play Store இல்லாமல் ஆப் போல திறக்கும்.",
+  install_ios: "Share தட்டி, பிறகு Add to Home Screen தேர்ந்தெடுக்கவும்.",
+  install_btn: "நிறுவு",
+  welcome: "நான் உங்கள் Accel Business ஆலோசகர். சில சிறிய கேள்விகளுக்குப் பிறகு, உங்கள் மொழியில், குரல் அல்லது உரை மூலம் சரியான தொகுப்பைப் பரிந்துரைக்கிறேன்.",
+  home_greet: "மீண்டும் வருக,",
+  sayAgain: "மன்னிக்கவும், புரியவில்லை. தயவுசெய்து மீண்டும் சொல்லுங்கள்.",
+  micFail: "குரல் மூலம் புரியவில்லை. விருப்பங்களில் இருந்து தேர்ந்தெடுக்கவும், அல்லது மீண்டும் முயல மைக்கைத் தட்டவும்.",
   home_start_body: "உங்கள் வணிகத்தை குரல் அல்லது உரையில் ஒரே வரியில் சொல்லுங்கள், அல்லது சில எளிய கேள்விகளைத் தட்டுங்கள். ஒரே துல்லியமான மாதாந்திர விலை கிடைக்கும்.",
   neededFor: "{x}க்கு தேவை",
   addsAlso: "இதற்குத் தேவையான {x} உம் சேர்க்கப்படும்",
@@ -65,7 +89,7 @@ const ta: D = {
   resume_ref: "ஆர்டர் ID (ACC-…) அல்லது மொபைல் எண்",
   resume_code: "6 இலக்க குறியீடு",
   resume_btn: "தொடரவும்",
-  resume_fail: "இந்த விவரங்களுடன் விண்ணப்பம் கிடைக்கவில்லை. குறியீட்டைச் சரிபார்த்து மீண்டும் முயலுங்கள்.",
+  resume_fail: "கண்டுபிடிக்க முடியவில்லை. 6 இலக்க குறியீட்டைச் சரிபார்க்கவும். மொபைல் எண்ணைச் சேமிக்கவில்லை என்றால், ஆர்டர் ID (ACC-…) பயன்படுத்துங்கள்.",
   resume_many: "அதிக முயற்சிகள். 15 நிமிடம் கழித்து முயலுங்கள்.",
   or_new: "புதியவரா?",
   save_title: "பிறகு தொடர இதைச் சேமியுங்கள்",
@@ -81,6 +105,14 @@ const ta: D = {
 };
 
 const te: D = {
+  install_title: "యాప్ ఇన్‌స్టాల్ చేయండి",
+  install_sub: "Play Store లేకుండా యాప్‌లా తెరుచుకుంటుంది.",
+  install_ios: "Share నొక్కి, తర్వాత Add to Home Screen ఎంచుకోండి.",
+  install_btn: "ఇన్‌స్టాల్",
+  welcome: "నేను మీ Accel Business సలహాదారుని. కొన్ని చిన్న ప్రశ్నల తర్వాత, మీ భాషలో, వాయిస్ లేదా టెక్స్ట్ ద్వారా సరైన బండిల్ సూచిస్తాను.",
+  home_greet: "తిరిగి స్వాగతం,",
+  sayAgain: "క్షమించండి, అర్థం కాలేదు. దయచేసి మళ్లీ చెప్పండి.",
+  micFail: "వాయిస్ ద్వారా అర్థం కాలేదు. ఎంపికల నుండి ఎంచుకోండి, లేదా మళ్లీ ప్రయత్నించడానికి మైక్ నొక్కండి.",
   home_start_body: "మీ వ్యాపారం గురించి వాయిస్ లేదా టెక్స్ట్‌లో ఒక్క వాక్యంలో చెప్పండి, లేదా కొన్ని సులభమైన ప్రశ్నలు ట్యాప్ చేయండి. మీకు ఒకే ఖచ్చితమైన నెలవారీ ధర వస్తుంది.",
   neededFor: "{x} కోసం అవసరం",
   addsAlso: "దీనికి అవసరమైన {x} కూడా జోడించబడుతుంది",
@@ -91,7 +123,7 @@ const te: D = {
   resume_ref: "ఆర్డర్ ID (ACC-…) లేదా మొబైల్ నంబర్",
   resume_code: "6 అంకెల కోడ్",
   resume_btn: "కొనసాగించు",
-  resume_fail: "ఈ వివరాలతో దరఖాస్తు కనిపించలేదు. కోడ్ చూసి మళ్లీ ప్రయత్నించండి.",
+  resume_fail: "దొరకలేదు. 6 అంకెల కోడ్ చూడండి. మీరు మొబైల్ నంబర్ సేవ్ చేయకపోతే, ఆర్డర్ ID (ACC-…) ఉపయోగించండి.",
   resume_many: "చాలా ప్రయత్నాలు. 15 నిమిషాల తర్వాత ప్రయత్నించండి.",
   or_new: "కొత్తవారా?",
   save_title: "తర్వాత కొనసాగించడానికి దీన్ని సేవ్ చేయండి",
@@ -107,6 +139,14 @@ const te: D = {
 };
 
 const bn: D = {
+  install_title: "অ্যাপ ইনস্টল করুন",
+  install_sub: "Play Store ছাড়াই অ্যাপের মতো খুলবে।",
+  install_ios: "Share-এ ট্যাপ করে Add to Home Screen বেছে নিন।",
+  install_btn: "ইনস্টল",
+  welcome: "আমি আপনার Accel Business পরামর্শদাতা। কয়েকটি ছোট প্রশ্নের পর আপনার ভাষায়, কথা বলে বা লিখে, সঠিক বান্ডেল সাজেস্ট করব।",
+  home_greet: "আবার স্বাগতম,",
+  sayAgain: "দুঃখিত, বুঝতে পারিনি। আবার বলুন।",
+  micFail: "কথা শুনে বুঝতে পারিনি। বিকল্প থেকে বেছে নিন, বা আবার চেষ্টা করতে মাইকে ট্যাপ করুন।",
   home_start_body: "ভয়েস বা লেখায় এক লাইনে আপনার ব্যবসার কথা বলুন, অথবা কয়েকটি সহজ প্রশ্নে ট্যাপ করুন। আপনি একটি নির্দিষ্ট মাসিক দাম পাবেন।",
   neededFor: "{x}-এর জন্য দরকার",
   addsAlso: "এর জন্য দরকারি {x}-ও যোগ হবে",
@@ -117,7 +157,7 @@ const bn: D = {
   resume_ref: "অর্ডার ID (ACC-…) বা মোবাইল নম্বর",
   resume_code: "৬ অঙ্কের কোড",
   resume_btn: "চালিয়ে যান",
-  resume_fail: "এই তথ্যে কোনো আবেদন পাওয়া যায়নি। কোডটি দেখে আবার চেষ্টা করুন।",
+  resume_fail: "খুঁজে পাওয়া যায়নি। ৬ অঙ্কের কোড দেখুন। মোবাইল নম্বর সেভ না করে থাকলে অর্ডার ID (ACC-…) দিন।",
   resume_many: "অনেকবার চেষ্টা হয়েছে। ১৫ মিনিট পরে আবার চেষ্টা করুন।",
   or_new: "নতুন?",
   save_title: "পরে চালিয়ে যেতে এটি রেখে দিন",
@@ -133,6 +173,14 @@ const bn: D = {
 };
 
 const mr: D = {
+  install_title: "ॲप इन्स्टॉल करा",
+  install_sub: "Play Store शिवाय ॲपसारखे उघडेल.",
+  install_ios: "Share दाबा, मग Add to Home Screen निवडा.",
+  install_btn: "इन्स्टॉल",
+  welcome: "मी तुमचा Accel Business सल्लागार आहे. काही छोट्या प्रश्नांनंतर तुमच्या भाषेत, बोलून किंवा लिहून, योग्य बंडल सुचवेन.",
+  home_greet: "पुन्हा स्वागत आहे,",
+  sayAgain: "माफ करा, समजले नाही. कृपया पुन्हा सांगा.",
+  micFail: "आवाजावरून समजले नाही. पर्यायांमधून निवडा, किंवा पुन्हा प्रयत्न करण्यासाठी माइक दाबा.",
   home_start_body: "बोलून किंवा लिहून एका ओळीत तुमच्या व्यवसायाबद्दल सांगा, किंवा काही सोप्या प्रश्नांवर टॅप करा. तुम्हाला एक निश्चित मासिक किंमत मिळेल.",
   neededFor: "{x} साठी आवश्यक",
   addsAlso: "यासाठी आवश्यक {x} देखील जोडले जाईल",
@@ -143,7 +191,7 @@ const mr: D = {
   resume_ref: "ऑर्डर ID (ACC-…) किंवा मोबाइल नंबर",
   resume_code: "6 अंकी कोड",
   resume_btn: "पुढे चला",
-  resume_fail: "या माहितीने अर्ज सापडला नाही. कोड तपासून पुन्हा प्रयत्न करा.",
+  resume_fail: "सापडले नाही. 6 अंकी कोड तपासा. मोबाइल नंबर जतन केला नसेल तर ऑर्डर ID (ACC-…) वापरा.",
   resume_many: "खूप प्रयत्न झाले. 15 मिनिटांनी पुन्हा प्रयत्न करा.",
   or_new: "नवीन आहात?",
   save_title: "नंतर पुढे सुरू ठेवण्यासाठी हे जतन करा",
@@ -159,6 +207,14 @@ const mr: D = {
 };
 
 const kn: D = {
+  install_title: "ಆ್ಯಪ್ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಿ",
+  install_sub: "Play Store ಇಲ್ಲದೆ ಆ್ಯಪ್‌ನಂತೆ ತೆರೆಯುತ್ತದೆ.",
+  install_ios: "Share ಒತ್ತಿ, ನಂತರ Add to Home Screen ಆರಿಸಿ.",
+  install_btn: "ಇನ್‌ಸ್ಟಾಲ್",
+  welcome: "ನಾನು ನಿಮ್ಮ Accel Business ಸಲಹೆಗಾರ. ಕೆಲವು ಸಣ್ಣ ಪ್ರಶ್ನೆಗಳ ನಂತರ ನಿಮ್ಮ ಭಾಷೆಯಲ್ಲಿ, ಧ್ವನಿ ಅಥವಾ ಪಠ್ಯದ ಮೂಲಕ ಸರಿಯಾದ ಬಂಡಲ್ ಸೂಚಿಸುತ್ತೇನೆ.",
+  home_greet: "ಮತ್ತೆ ಸ್ವಾಗತ,",
+  sayAgain: "ಕ್ಷಮಿಸಿ, ಅರ್ಥವಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಹೇಳಿ.",
+  micFail: "ಧ್ವನಿಯಿಂದ ಅರ್ಥವಾಗಲಿಲ್ಲ. ಆಯ್ಕೆಗಳಿಂದ ಆರಿಸಿ, ಅಥವಾ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಲು ಮೈಕ್ ಒತ್ತಿ.",
   home_start_body: "ನಿಮ್ಮ ವ್ಯಾಪಾರದ ಬಗ್ಗೆ ಧ್ವನಿ ಅಥವಾ ಪಠ್ಯದಲ್ಲಿ ಒಂದೇ ಸಾಲಿನಲ್ಲಿ ಹೇಳಿ, ಅಥವಾ ಕೆಲವು ಸುಲಭ ಪ್ರಶ್ನೆಗಳನ್ನು ಟ್ಯಾಪ್ ಮಾಡಿ. ನಿಮಗೆ ಒಂದೇ ನಿಖರ ಮಾಸಿಕ ಬೆಲೆ ಸಿಗುತ್ತದೆ.",
   neededFor: "{x}ಗೆ ಅಗತ್ಯ",
   addsAlso: "ಇದಕ್ಕೆ ಬೇಕಾದ {x} ಸಹ ಸೇರುತ್ತದೆ",
@@ -169,7 +225,7 @@ const kn: D = {
   resume_ref: "ಆರ್ಡರ್ ID (ACC-…) ಅಥವಾ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ",
   resume_code: "6 ಅಂಕಿಯ ಕೋಡ್",
   resume_btn: "ಮುಂದುವರಿಸಿ",
-  resume_fail: "ಈ ವಿವರಗಳೊಂದಿಗೆ ಅರ್ಜಿ ಸಿಗಲಿಲ್ಲ. ಕೋಡ್ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
+  resume_fail: "ಸಿಗಲಿಲ್ಲ. 6 ಅಂಕಿಯ ಕೋಡ್ ಪರಿಶೀಲಿಸಿ. ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ಉಳಿಸದಿದ್ದರೆ ಆರ್ಡರ್ ID (ACC-…) ಬಳಸಿ.",
   resume_many: "ಹೆಚ್ಚು ಪ್ರಯತ್ನಗಳು. 15 ನಿಮಿಷಗಳ ನಂತರ ಪ್ರಯತ್ನಿಸಿ.",
   or_new: "ಹೊಸಬರೇ?",
   save_title: "ನಂತರ ಮುಂದುವರಿಸಲು ಇದನ್ನು ಉಳಿಸಿ",
@@ -185,6 +241,14 @@ const kn: D = {
 };
 
 const pa: D = {
+  install_title: "ਐਪ ਇੰਸਟਾਲ ਕਰੋ",
+  install_sub: "Play Store ਤੋਂ ਬਿਨਾਂ ਐਪ ਵਾਂਗ ਖੁੱਲ੍ਹੇਗਾ।",
+  install_ios: "Share ਦਬਾਓ, ਫਿਰ Add to Home Screen ਚੁਣੋ।",
+  install_btn: "ਇੰਸਟਾਲ",
+  welcome: "ਮੈਂ ਤੁਹਾਡਾ Accel Business ਸਲਾਹਕਾਰ ਹਾਂ। ਕੁਝ ਛੋਟੇ ਸਵਾਲਾਂ ਤੋਂ ਬਾਅਦ ਤੁਹਾਡੀ ਭਾਸ਼ਾ ਵਿੱਚ, ਬੋਲ ਕੇ ਜਾਂ ਲਿਖ ਕੇ, ਸਹੀ ਬੰਡਲ ਸੁਝਾਵਾਂਗਾ।",
+  home_greet: "ਮੁੜ ਜੀ ਆਇਆਂ ਨੂੰ,",
+  sayAgain: "ਮਾਫ਼ ਕਰਨਾ, ਸਮਝ ਨਹੀਂ ਆਇਆ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਬੋਲੋ।",
+  micFail: "ਆਵਾਜ਼ ਤੋਂ ਸਮਝ ਨਹੀਂ ਆਇਆ। ਵਿਕਲਪਾਂ ਵਿੱਚੋਂ ਚੁਣੋ, ਜਾਂ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਲਈ ਮਾਈਕ ਦਬਾਓ।",
   home_start_body: "ਬੋਲ ਕੇ ਜਾਂ ਲਿਖ ਕੇ ਇੱਕ ਲਾਈਨ ਵਿੱਚ ਆਪਣੇ ਕਾਰੋਬਾਰ ਬਾਰੇ ਦੱਸੋ, ਜਾਂ ਕੁਝ ਆਸਾਨ ਸਵਾਲਾਂ 'ਤੇ ਟੈਪ ਕਰੋ। ਤੁਹਾਨੂੰ ਇੱਕ ਪੱਕੀ ਮਹੀਨਾਵਾਰ ਕੀਮਤ ਮਿਲੇਗੀ।",
   neededFor: "{x} ਲਈ ਲੋੜੀਂਦਾ",
   addsAlso: "ਇਸ ਲਈ ਲੋੜੀਂਦਾ {x} ਵੀ ਜੁੜੇਗਾ",
@@ -195,7 +259,7 @@ const pa: D = {
   resume_ref: "ਆਰਡਰ ID (ACC-…) ਜਾਂ ਮੋਬਾਈਲ ਨੰਬਰ",
   resume_code: "6 ਅੰਕਾਂ ਦਾ ਕੋਡ",
   resume_btn: "ਜਾਰੀ ਰੱਖੋ",
-  resume_fail: "ਇਨ੍ਹਾਂ ਵੇਰਵਿਆਂ ਨਾਲ ਕੋਈ ਅਰਜ਼ੀ ਨਹੀਂ ਮਿਲੀ। ਕੋਡ ਜਾਂਚ ਕੇ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
+  resume_fail: "ਨਹੀਂ ਮਿਲਿਆ। 6 ਅੰਕਾਂ ਦਾ ਕੋਡ ਜਾਂਚੋ। ਜੇ ਮੋਬਾਈਲ ਨੰਬਰ ਸੰਭਾਲਿਆ ਨਹੀਂ ਸੀ ਤਾਂ ਆਰਡਰ ID (ACC-…) ਵਰਤੋ।",
   resume_many: "ਬਹੁਤ ਵਾਰ ਕੋਸ਼ਿਸ਼ ਹੋਈ। 15 ਮਿੰਟ ਬਾਅਦ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ।",
   or_new: "ਨਵੇਂ ਹੋ?",
   save_title: "ਬਾਅਦ ਵਿੱਚ ਜਾਰੀ ਰੱਖਣ ਲਈ ਇਸਨੂੰ ਸੰਭਾਲੋ",

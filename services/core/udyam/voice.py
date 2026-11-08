@@ -19,6 +19,7 @@ TTS_CHAR_LIMIT = 450
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CACHE_DIR = os.path.normpath(os.path.join(HERE, "..", "data", "tts_cache"))
+PROMPT_DIR = os.path.normpath(os.path.join(HERE, "..", "data", "voice_prompts"))
 
 
 def _key() -> str | None:
@@ -165,6 +166,9 @@ def tts(text: str, lang_code: str) -> bytes:
 
 def _synthesise(text: str, lang_code: str, h: str) -> bytes:
     path = os.path.join(CACHE_DIR, f"{h}.wav")
+    bundled = os.path.join(PROMPT_DIR, f"{h}.wav")
+    if os.path.exists(bundled):
+        path = bundled
     if os.path.exists(path):
         with open(path, "rb") as f:
             data = f.read()

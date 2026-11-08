@@ -4,7 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { Order, OrderLine } from "@/lib/api";
 import { Lang, t } from "@/lib/i18n";
 import LangPill from "./LangPill";
-import { ResumeCard } from "./Resume";
+import { ResumeCard, SaveCard } from "./Resume";
 import { lineLabel } from "./QuoteCard";
 import { orderProgress, statusTone } from "./Home";
 import { Card, Chip, ChipTone, CountUp, Hero, IconTile, LiveDot, Money, PersonCard, Ring, Segments, btn, productLook } from "./ui";
@@ -153,6 +153,8 @@ export default function Tracker({
       </Hero>
 
       <div className="mt-4 space-y-4 px-4">
+        {!live && <SaveCard lang={lang} order={order} />}
+
         <section>
           <h2 className="mb-3 px-1 text-[15px] font-semibold text-ink-900">{t(lang, "tr_services")}</h2>
           <Card className="stagger overflow-hidden">

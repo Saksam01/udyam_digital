@@ -67,7 +67,7 @@ const bn: Record<string, string> = {
   askPartner: "স্থানীয় পার্টনার আমাকে ফোন করুন",
   partnerCard: "আপনার স্থানীয় পার্টনার",
   tab_home: "হোম",
-  home_greet: "নমস্কার,",
+  home_greet: "আবার স্বাগতম,",
   home_guest: "Accel Business-এ স্বাগতম",
   home_sub: "আপনার ব্যবসার মাপে কানেক্টিভিটি, সঠিক দামে।",
   home_start_title: "প্রায় ২ মিনিটে সঠিক প্ল্যান খুঁজুন",

@@ -76,6 +76,7 @@ export default function Page() {
       if (url.searchParams.get("new") === "1") {
         safeSet("udyam_order", null);
         safeSet("udyam_sid", null);
+        safeSet("udyam_quote", null);
         url.searchParams.delete("new");
         window.history.replaceState(null, "", url.pathname + url.search);
       }

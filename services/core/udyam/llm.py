@@ -86,6 +86,7 @@ def explain(facts: dict, lang: str) -> str | None:
     if not available():
         return None
     system = ("You are a friendly Indian business advisor. In 2 or 3 short sentences, explain in the requested language why this bundle suits "
-              "this business. Use ONLY the facts given. Do not state any price, percentage, number or product code. Plain words, no jargon.")
+              "this business. Use ONLY the facts given. Do not state any price, percentage, number or product code. Plain words, no jargon. "
+              "Do not greet or say hello, namaste or similar; start directly with the reason.")
     return _call([{"text": f"Language code: {lang}\nFacts: {json.dumps(facts, ensure_ascii=False)}"}], system=system,
                  temperature=0.4, timeout=12, max_tokens=300)

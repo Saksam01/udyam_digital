@@ -67,7 +67,7 @@ const mr: Record<string, string> = {
   askPartner: "स्थानिक पार्टनरने मला फोन करावा",
   partnerCard: "तुमचे स्थानिक पार्टनर",
   tab_home: "होम",
-  home_greet: "नमस्कार,",
+  home_greet: "पुन्हा स्वागत आहे,",
   home_guest: "Accel Business मध्ये स्वागत आहे",
   home_sub: "तुमच्या व्यवसायाला साजेशी कनेक्टिव्हिटी, योग्य किमतीत.",
   home_start_title: "सुमारे 2 मिनिटांत योग्य प्लॅन शोधा",
