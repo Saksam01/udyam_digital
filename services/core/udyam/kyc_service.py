@@ -135,8 +135,9 @@ def verify_upload(files: dict[str, bytes], declared: str | None = None) -> dict:
     needs = []
     for t in blurred - {"gst"}:
         needs.append({"doc": t, "slot": KX.DOC_SLOT[t], "kind": "blurry", "text": f"Your {KX.DOC_NAME[t]} is too blurry to read. Please retake it in good light, holding the phone steady."})
+    sent_but_unread = {p["slot"] for p in problems}
     for t in KX.REQUIRED:
-        if t not in docs and t not in blurred:
+        if t not in docs and t not in blurred and KX.DOC_SLOT[t] not in sent_but_unread:
             needs.append({"doc": t, "slot": KX.DOC_SLOT[t], "kind": "missing", "text": f"Please upload your {KX.DOC_NAME[t]}."})
     for p in problems:
         if p.get("blurred"):
@@ -144,9 +145,16 @@ def verify_upload(files: dict[str, bytes], declared: str | None = None) -> dict:
         t = next((t for t, s in KX.DOC_SLOT.items() if s == p["slot"]), None)
         if t and t in docs and p["reason"] != "missing_fields":
             continue
-        if p["reason"] in ("unrecognised", "unreadable_file", "no_reader", "missing_fields"):
+        if p["reason"] == "unreadable_file":
+            name = KX.DOC_NAME.get(t, "document") if t else "document"
+            needs.append({"doc": t, "slot": p["slot"], "kind": "format", "text": f"We could not open the file for your {name}. Please upload it as a JPG, PNG or PDF."})
+            continue
+        if p["reason"] in ("unrecognised", "no_reader", "missing_fields"):
             name = KX.DOC_NAME.get(t, "document") if t else "document"
             needs.append({"doc": t, "slot": p["slot"], "kind": "unreadable", "text": f"We could not read your {name}. Please upload a clear, full-page photo."})
+    if needs and "gst" in blurred:
+        needs.insert(0, {"doc": "gst", "slot": KX.DOC_SLOT["gst"], "kind": "blurry",
+                         "text": f"Your {KX.DOC_NAME['gst']} is too blurry to read. Please retake it in good light, holding the phone steady."})
     seen, uniq = set(), []
     for n in needs:
         if n["text"] not in seen:

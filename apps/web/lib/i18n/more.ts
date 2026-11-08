@@ -3,6 +3,7 @@ import type { Lang } from "../i18n";
 type D = Record<string, string>;
 
 const en: D = {
+  need_format: "We could not open the file for your {doc}. Please upload it as a JPG, PNG or PDF.",
   fileUnreadable: "We could not open this file. Please pick it again or take a fresh photo.",
   uploadFail: "The server could not process the documents. Please try again",
   newBiz: "Start for another business",
@@ -70,6 +71,7 @@ const en: D = {
 };
 
 const hi: D = {
+  need_format: "आपके {doc} की फ़ाइल खुल नहीं पाई। कृपया इसे JPG, PNG या PDF के रूप में अपलोड करें।",
   fileUnreadable: "यह फ़ाइल खुल नहीं पाई। कृपया इसे फिर से चुनें या नई फ़ोटो लें।",
   uploadFail: "सर्वर दस्तावेज़ प्रोसेस नहीं कर पाया। कृपया फिर से कोशिश करें",
   newBiz: "दूसरे व्यवसाय के लिए शुरू करें",
@@ -137,6 +139,7 @@ const hi: D = {
 };
 
 const ta: D = {
+  need_format: "உங்கள் {doc} கோப்பைத் திறக்க முடியவில்லை. JPG, PNG அல்லது PDF ஆகப் பதிவேற்றவும்.",
   fileUnreadable: "இந்தக் கோப்பைத் திறக்க முடியவில்லை. மீண்டும் தேர்ந்தெடுக்கவும் அல்லது புதிய படம் எடுக்கவும்.",
   uploadFail: "ஆவணங்களைச் செயலாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்",
   newBiz: "மற்றொரு வணிகத்திற்கு தொடங்கு",
@@ -204,6 +207,7 @@ const ta: D = {
 };
 
 const te: D = {
+  need_format: "మీ {doc} ఫైల్‌ను తెరవలేకపోయాం. దయచేసి JPG, PNG లేదా PDFగా అప్‌లోడ్ చేయండి.",
   fileUnreadable: "ఈ ఫైల్ తెరవలేకపోయాం. దయచేసి మళ్లీ ఎంచుకోండి లేదా కొత్త ఫోటో తీయండి.",
   uploadFail: "పత్రాలను ప్రాసెస్ చేయలేకపోయాం. దయచేసి మళ్లీ ప్రయత్నించండి",
   newBiz: "మరో వ్యాపారం కోసం ప్రారంభించండి",
@@ -271,6 +275,7 @@ const te: D = {
 };
 
 const bn: D = {
+  need_format: "আপনার {doc}-এর ফাইলটি খোলা যায়নি। JPG, PNG বা PDF হিসেবে আপলোড করুন।",
   fileUnreadable: "এই ফাইলটি খোলা যায়নি। আবার বেছে নিন বা নতুন ছবি তুলুন।",
   uploadFail: "নথিগুলি প্রসেস করা যায়নি। আবার চেষ্টা করুন",
   newBiz: "অন্য ব্যবসার জন্য শুরু করুন",
@@ -338,6 +343,7 @@ const bn: D = {
 };
 
 const mr: D = {
+  need_format: "तुमच्या {doc} ची फाइल उघडता आली नाही. कृपया JPG, PNG किंवा PDF म्हणून अपलोड करा.",
   fileUnreadable: "ही फाइल उघडता आली नाही. कृपया पुन्हा निवडा किंवा नवीन फोटो घ्या.",
   uploadFail: "कागदपत्रे प्रोसेस करता आली नाहीत. कृपया पुन्हा प्रयत्न करा",
   newBiz: "दुसऱ्या व्यवसायासाठी सुरू करा",
@@ -405,6 +411,7 @@ const mr: D = {
 };
 
 const kn: D = {
+  need_format: "ನಿಮ್ಮ {doc} ಫೈಲ್ ತೆರೆಯಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು JPG, PNG ಅಥವಾ PDF ಆಗಿ ಅಪ್‌ಲೋಡ್ ಮಾಡಿ.",
   fileUnreadable: "ಈ ಫೈಲ್ ತೆರೆಯಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಹೊಸ ಫೋಟೋ ತೆಗೆಯಿರಿ.",
   uploadFail: "ದಾಖಲೆಗಳನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
   newBiz: "ಮತ್ತೊಂದು ವ್ಯಾಪಾರಕ್ಕೆ ಪ್ರಾರಂಭಿಸಿ",
@@ -472,6 +479,7 @@ const kn: D = {
 };
 
 const pa: D = {
+  need_format: "ਤੁਹਾਡੇ {doc} ਦੀ ਫਾਈਲ ਖੁੱਲ੍ਹ ਨਹੀਂ ਸਕੀ। ਕਿਰਪਾ ਕਰਕੇ ਇਸਨੂੰ JPG, PNG ਜਾਂ PDF ਵਜੋਂ ਅੱਪਲੋਡ ਕਰੋ।",
   fileUnreadable: "ਇਹ ਫਾਈਲ ਖੁੱਲ੍ਹ ਨਹੀਂ ਸਕੀ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਚੁਣੋ ਜਾਂ ਨਵੀਂ ਫੋਟੋ ਲਓ।",
   uploadFail: "ਦਸਤਾਵੇਜ਼ ਪ੍ਰੋਸੈਸ ਨਹੀਂ ਹੋ ਸਕੇ। ਕਿਰਪਾ ਕਰਕੇ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰੋ",
   newBiz: "ਕਿਸੇ ਹੋਰ ਕਾਰੋਬਾਰ ਲਈ ਸ਼ੁਰੂ ਕਰੋ",

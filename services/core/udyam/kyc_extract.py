@@ -72,6 +72,26 @@ def _decode(data: bytes):
     return img
 
 
+def _crop_page(bgr):
+    """Cuts the document out of a screenshot or photo (dark bars, desk) and whitens the rest, so tilt is measured on the page."""
+    gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+    _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((25, 25), np.uint8))
+    cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not cnts:
+        return bgr
+    c = max(cnts, key=cv2.contourArea)
+    area = cv2.contourArea(c) / (gray.shape[0] * gray.shape[1])
+    if area < 0.15 or area > 0.9:
+        return bgr
+    page = np.zeros_like(gray)
+    cv2.drawContours(page, [cv2.convexHull(c)], -1, 255, -1)
+    out = bgr.copy()
+    out[page == 0] = 255
+    x, y, w, h = cv2.boundingRect(c)
+    return out[y:y + h, x:x + w]
+
+
 def _resize(bgr):
     h, w = bgr.shape[:2]
     if w == NORMAL_WIDTH:
@@ -288,8 +308,9 @@ def read_image(data: bytes) -> dict:
     """OCR one upload."""
     bgr = _decode(data)
     if bgr is None:
+        print("kyc upload: cannot decode file, first bytes", data[:12].hex(), "size", len(data))
         return {"ok": False, "reason": "unreadable_file"}
-    bgr = _resize(bgr)
+    bgr = _resize(_crop_page(bgr))
     q = quality(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY))
     clean = _remove_watermark(bgr)
     est = _best_angle(clean)
@@ -304,6 +325,12 @@ def read_image(data: bytes) -> dict:
             best = {"text": txt, "score": sc, "angle": ang, "lines": lines, "img": img}
         if sc >= 3:
             break
+    if best["score"] < 4:
+        big = cv2.resize(_rotate(clean, best["angle"]), None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        txt, lines = _tesseract_lines(big)
+        sc = label_score(txt)
+        if sc > best["score"]:
+            best = {"text": txt, "score": sc, "angle": best["angle"], "lines": lines, "img": big}
     return {"ok": True, "text": best["text"], "angle": best["angle"], "quality": q, "label_score": best["score"],
             "lines": best["lines"], "image": best["img"]}
 
@@ -345,9 +372,14 @@ def _repair_gstin_any(cand: str, registry_keys):
         tries = [raw[:i] + raw[i + 1:] for i in range(16)]
     elif len(raw) == 14:
         tries = [raw[:i] + c + raw[i:] for i in range(15) for c in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"]
-    hits = [t for t in tries if validate_gstin(t)["checksum_ok"] and (registry_keys is None or t in registry_keys)]
-    if len(hits) >= 1:
-        return hits[0], 1
+    hits = {t for t in tries if validate_gstin(t)["checksum_ok"] and (registry_keys is None or t in registry_keys)}
+    if not hits and len(raw) == 16 and registry_keys is not None:
+        for t in tries:
+            f2, e2 = repair_gstin(t, registry_keys)
+            if e2 is not None:
+                hits.add(f2)
+    if len(hits) == 1:
+        return hits.pop(), 2
     return fixed, None
 
 
@@ -379,7 +411,7 @@ def parse(doctype: str, text: str, registry_keys=None, lines: list[dict] | None 
             values[current] = _join(values.get(current, ""), line)
             where.setdefault(current, []).append(idx)
             extra += 1
-    out = {k: v.strip(" |_") for k, v in values.items()}
+    out = {k: re.sub(r"(?<=[A-Za-z])[!|}](?=[A-Za-z]|\W|$)", "l", v.strip(" |_")) for k, v in values.items()}
     if lines:
         boxes = {}
         for k, idxs in where.items():
@@ -407,13 +439,74 @@ def parse(doctype: str, text: str, registry_keys=None, lines: list[dict] | None 
         out["bill_date"] = _date(out.get("bill_date")) or ""
         out["consumer_no"] = re.sub(r"\D", "", out.get("consumer_no", ""))
     elif doctype == "sig":
+        _sig_by_position(out, text)
         out["valid_till"] = _date(out.get("valid_till")) or ""
     return out
+
+
+def _sig_by_position(out: dict, text: str) -> None:
+    """ID cards list name, designation, business, ID and validity in that order; use it when labels are too faint to read."""
+    labels = {w for _, l in FIELDS["sig"] for w in [l]}
+    vals = []
+    for ln in (x.strip() for x in text.splitlines()):
+        low = " ".join(_words(ln))
+        if not ln or NOISE.search(ln) or any(k in low for k in TITLES["sig"]) or low in labels or low in ("id no", "valid till"):
+            continue
+        vals.append(ln)
+    id_i = next((i for i, v in enumerate(vals) if re.search(r"[A-Z]{2,}-?ID-?\d+|\d{6,}", v)), None)
+    date_i = next((i for i, v in enumerate(vals) if _date(v)), None)
+    if not out.get("id_no") and id_i is not None:
+        out["id_no"] = vals[id_i]
+    if not _date(out.get("valid_till")) and date_i is not None:
+        out["valid_till"] = vals[date_i]
+    before = vals[:id_i] if id_i is not None else vals[:date_i] if date_i is not None else vals
+    if not out.get("name") and before:
+        out["name"] = before[0]
+    if not out.get("business") and len(before) >= 2:
+        out["business"] = before[-1]
+    if not out.get("designation") and len(before) >= 3:
+        out["designation"] = before[1]
 
 
 def required_fields(doctype: str) -> list[str]:
     return {"gst": ["gstin", "legal_name", "trade_name", "address"], "udyam": ["enterprise_name"],
             "sig": ["name", "business", "valid_till"], "bill": ["billed_to", "address", "bill_date"]}[doctype]
+
+
+def _tess_plain(gray, psm: int, whitelist: str) -> str:
+    fd, path = tempfile.mkstemp(suffix=".png")
+    os.close(fd)
+    try:
+        cv2.imwrite(path, gray)
+        return subprocess.run([_tess() or "tesseract", path, "-", "-l", "eng", "--psm", str(psm),
+                               "-c", f"tessedit_char_whitelist={whitelist}"], capture_output=True, text=True, timeout=30).stdout
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+
+def _reread_gstin(img, box, registry_keys, current: str) -> str | None:
+    """The GSTIN line read again on its own, enlarged and limited to A-Z/0-9. Used only if the result passes the check digit."""
+    from udyam.kyc_rules import validate_gstin
+    if validate_gstin(current or "")["checksum_ok"]:
+        return None
+    x, y, w, h = box
+    H, W = img.shape[:2]
+    crop = img[max(0, y - 12): min(H, y + h + 12), max(0, x - 12): min(W, x + w + 12)]
+    if crop.size == 0:
+        return None
+    big = cv2.resize(crop, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+    _, bw = cv2.threshold(big, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    for im in (big, bw):
+        for psm in (7, 6):
+            txt = _tess_plain(im, psm, "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ").upper()
+            for cand in re.findall(r"[0-9A-Z]{13,17}", txt.replace(" ", "")):
+                fixed, edits = _repair_gstin_any(cand, registry_keys)
+                if edits is not None and validate_gstin(fixed)["checksum_ok"] and (registry_keys is None or fixed in registry_keys):
+                    return fixed
+    return None
 
 
 def process_one(data: bytes, registry_keys=None) -> dict:
@@ -426,6 +519,10 @@ def process_one(data: bytes, registry_keys=None) -> dict:
         return {"ok": False, "reason": "unrecognised", "quality": r["quality"]}
     fields = parse(doctype, r["text"], registry_keys, r["lines"])
     boxes = fields.pop("_boxes", {})
+    if doctype == "gst" and boxes.get("gstin"):
+        better = _reread_gstin(r["image"], boxes["gstin"], registry_keys, fields.get("gstin", ""))
+        if better:
+            fields["gstin"], fields["gstin_repaired"] = better, True
     masked = 0
     for k in list(fields):
         if k in ("gstin", "gstin_read", "udyam_number") or not isinstance(fields[k], str):

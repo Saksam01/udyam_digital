@@ -34,7 +34,6 @@ export async function prepareUpload(f: File): Promise<File> {
   try {
     const img = await loadImage(copy);
     const scale = Math.min(1, MAX_W / img.naturalWidth, MAX_H / img.naturalHeight);
-    if (scale === 1 && f.size < 1.5 * 1024 * 1024) return new File([copy], f.name, { type: f.type });
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(img.naturalWidth * scale);
     canvas.height = Math.round(img.naturalHeight * scale);
