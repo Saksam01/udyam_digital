@@ -95,7 +95,6 @@ def match_name(a: str, b: str, kind: str = "business") -> dict:
     return {"score": score, "distinctive_token_match": tok_ok, "band": band}
 
 def match_legal_name(a: str, b: str) -> dict:
-    """Proprietorship legal names 'Owner (Prop."""
     (pa, ba), (pb, bb) = split_prop(a), split_prop(b)
     if not (ba and bb): return match_name(a, b)
     mp, mb = match_name(pa, pb, "person"), match_name(ba, bb)
@@ -122,7 +121,6 @@ SRC = {"gst": "GST certificate", "udyam": "Udyam certificate", "sig": "Signatory
 
 
 def match_declared(declared: str, names: list[str]) -> dict:
-    """The name the owner typed vs every business name on the documents."""
     best = {"score": 0.0, "band": "FAIL", "against": None, "distinctive_token_match": False}
     nd = norm_business(declared, drop_suffix=True)
     for n in names:
@@ -135,6 +133,22 @@ def match_declared(declared: str, names: list[str]) -> dict:
         if best["against"] is None or score > best["score"]:
             best = {"score": score, "band": band, "against": n, "distinctive_token_match": tok}
     return best
+
+
+CITY_ALIASES = {"Bengaluru": ["bangalore"], "Mumbai": ["bombay"], "Kolkata": ["calcutta"], "Chennai": ["madras"],
+                "Pune": ["poona"], "Vadodara": ["baroda"], "Kochi": ["cochin"], "Mysuru": ["mysore"],
+                "Visakhapatnam": ["vizag"], "Delhi": ["new delhi"], "Nashik": ["nasik"], "Gurugram": ["gurgaon"]}
+
+
+def city_in(city: str, address: str) -> tuple[bool, float]:
+    names = [city.lower()] + CITY_ALIASES.get(city.title(), [])
+    words = re.findall(r"[a-z]+", (address or "").lower())
+    grams = words + [a + " " + b for a, b in zip(words, words[1:])]
+    best = 0.0
+    for n in names:
+        for g in grams:
+            best = max(best, 1 - levenshtein(n, g) / max(len(n), len(g), 1))
+    return best >= 0.8, round(best, 3)
 
 
 def assess(app: dict, reg: Registry, lead: dict | None = None) -> dict:
@@ -199,6 +213,17 @@ def assess(app: dict, reg: Registry, lead: dict | None = None) -> dict:
         check("R31", "gst", "Documents belong to the business named in the app", m["band"] == "PASS", "HARD" if m["band"] == "FAIL" else "REVIEW",
               f"documents are for '{m['against']}', not '{declared}' ({m['score']})", "Upload the documents of the business you named, or correct the name",
               ev("gst", "business name", m["against"] or g.get("trade_name"), SRC["declared"], declared, m))
+    place = app.get("place") or {}
+    city = (place.get("city") or "").strip()
+    if city and not gst_unreadable:
+        ok_bill, s_bill = city_in(city, app["bill"].get("address", ""))
+        ok_gst, s_gst = city_in(city, g.get("address", ""))
+        multi = int(place.get("sites") or 1) > 1
+        check("R32", "bill", "The address proof is in the city where services will be installed", ok_bill or (multi and ok_gst),
+              "REVIEW" if multi else "HARD", f"services are for {city} but the address proof is elsewhere ({max(s_bill, s_gst)})",
+              "Upload an address proof for the premises where you want the services",
+              {"doc": "bill", "field": "supply address", "extracted": app["bill"].get("address", ""), "reference_source": "City chosen in the app",
+               "reference": city, "score": max(s_bill, s_gst), "threshold": 0.8})
     u = app.get("udyam")
     if u is None:
         if lead and lead.get("udyam_number"):

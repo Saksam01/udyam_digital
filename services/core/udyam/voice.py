@@ -136,7 +136,6 @@ _inflight: dict[str, threading.Event] = {}
 
 
 def tts(text: str, lang_code: str) -> bytes:
-    """WAV bytes for `text` spoken in `lang_code` (e.g."""
     text = (text or "").strip()
     if not text:
         raise RuntimeError("no text to speak")

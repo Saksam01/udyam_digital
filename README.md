@@ -47,7 +47,7 @@ any number in a reply that the engine did not produce.
 | Part | How |
 |---|---|
 | Bundle and price | Profiles per business type sized by staff and sites, checked by a rule engine built from `product_catalogue.csv`. Prices are catalogue list prices, never generated text. |
-| KYC | Tesseract OCR with deskewing and watermark removal, GSTIN checksum, registry status, name matching (Levenshtein, sequence and token-sort, plus a distinctive-word check), 27 rules in total. The name typed in the app must match the documents. |
+| KYC | Tesseract OCR with deskewing and watermark removal, GSTIN checksum, registry status, name matching (Levenshtein, sequence and token-sort, plus a distinctive-word check), 28 rules in total. The name typed in the app must match the documents, and the address proof must be in the city where services go in. |
 | Lead score | L2-regularised logistic regression trained on `smb_leads.csv` (held-out AUC 0.70). Shown as the stage's historical activation rate times this lead's lift, with the factors that moved it. |
 | Order lifecycle | One-way state machine: quote accepted → consent and documents → verified → field dispatch → live. Nothing goes live without verification. |
 | Live updates | Server-Sent Events for both the customer tracker and the console. |

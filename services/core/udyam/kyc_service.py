@@ -29,13 +29,14 @@ FRIENDLY = {
     "R28": ("The name on your bill differs from the business name.", None),
     "R29": ("The address on your bill differs from the certificate.", None),
     "R31": ("These documents are for a different business than the name you gave.", "Upload your own business's documents, or correct the business name."),
+    "R32": ("Your address proof is for a different city than the one you chose.", "Upload an address proof for the premises where you want the services."),
 }
 
 CHECKS = [
     ("gstin", "GSTIN is valid and active", {"R1", "R2", "R3", "R4", "R5"}),
     ("business", "Business name matches across documents", {"R6", "R10", "R20", "R23", "R28", "R31"}),
     ("signatory", "Signatory is valid and authorised", {"R22", "R24", "R25"}),
-    ("address", "Address proof is recent and matches", {"R7", "R27", "R27b", "R29"}),
+    ("address", "Address proof is recent and matches", {"R7", "R27", "R27b", "R29", "R32"}),
     ("udyam", "Udyam registration matches", {"R11", "R12", "R13", "R14", "R15", "R16", "R17"}),
 ]
 RANK = {"HARD": 3, "REVIEW": 2, "INFO": 1}
@@ -104,7 +105,7 @@ def _vision_fallback(files: dict[str, bytes], docs: dict, problems: list) -> Non
             problems.remove(p)
 
 
-def verify_upload(files: dict[str, bytes], declared: str | None = None) -> dict:
+def verify_upload(files: dict[str, bytes], declared: str | None = None, place: dict | None = None) -> dict:
     """files: slot -> bytes."""
     reg = data_loader.registry()
     if not KX.available():
@@ -165,6 +166,7 @@ def verify_upload(files: dict[str, bytes], declared: str | None = None) -> dict:
 
     app = _assemble(docs, blurred)
     app["declared"] = declared
+    app["place"] = place
     for k in ("valid_till",):
         try:
             date.fromisoformat(app["sig"][k])
@@ -241,7 +243,7 @@ def sample_page(case_id: str, slot: str) -> bytes | None:
     return (SAMPLE_PAGES.get(case_id) or {}).get(slot, {}).get("png")
 
 
-def verify_case_ocr(case_id: str, declared: str | None = None) -> dict:
+def verify_case_ocr(case_id: str, declared: str | None = None, place: dict | None = None) -> dict:
     files = {}
     for slot in SLOTS:
         p = case_document_path(case_id, slot)
@@ -250,17 +252,17 @@ def verify_case_ocr(case_id: str, declared: str | None = None) -> dict:
                 files[slot] = f.read()
     if not files:
         raise KeyError(case_id)
-    res = verify_upload(files, declared)
+    res = verify_upload(files, declared, place)
     if res.get("_pages"):
         SAMPLE_PAGES[case_id] = res["_pages"]
     return res
 
 
-def verify_case(case_id: str, declared: str | None = None) -> dict:
+def verify_case(case_id: str, declared: str | None = None, place: dict | None = None) -> dict:
     fx = data_loader.fixtures()[case_id]
     gst = dict(fx["gst"])
     gst["gstin"] = gst["gstin"].rstrip("?")
-    res = data_loader.assess_case(case_id, declared)
+    res = data_loader.assess_case(case_id, declared, place)
     app = {"gst": gst, "udyam": fx.get("udyam"), "declared": declared}
     out = _package(res, app)
     for t in out["trace"]:

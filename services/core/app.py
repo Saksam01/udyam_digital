@@ -188,7 +188,7 @@ KYC_DECISIONS = ("approve", "reject")
 
 @app.post("/api/v1/admin/orders/{order_id}/status")
 def admin_order_status(order_id: str, req: OrderStatusRequest, authorization: str = Header(default="")):
-    """Approve, reject, send to review, mark live, cancel or reopen any order."""
+    """Approve or reject documents, mark live, or cancel an order."""
     role = _auth(authorization)
     if req.action not in orders.ADMIN_ACTIONS:
         raise HTTPException(422, f"action must be one of {', '.join(orders.ADMIN_ACTIONS)}")
@@ -438,6 +438,12 @@ def _consent_or_400(order_id: str, consent_id: str | None) -> str:
     return consent_id
 
 
+def _place(order_id: str) -> dict:
+    row = store.one("SELECT city, quote FROM orders WHERE order_id=?", (order_id,)) or {}
+    prof = (store.loads(row.get("quote"), {}) or {}).get("profile", {})
+    return {"city": row.get("city") or "", "sites": prof.get("num_sites", 1)}
+
+
 def _declared(order_id: str) -> str | None:
     row = store.one("SELECT business FROM orders WHERE order_id=?", (order_id,))
     name = (row or {}).get("business") or ""
@@ -447,7 +453,7 @@ def _declared(order_id: str) -> str | None:
 @app.post("/api/v1/orders/{order_id}/consent")
 def order_consent(order_id: str, lang: str = "en", x_order_key: str = Header(default="")):
     _owner(order_id, x_order_key)
-    """Creates the DPDP consent artifact. Upload stays locked in the app until this exists."""
+    """Records the DPDP consent for this order."""
     o = orders.get(order_id)
     if not o:
         raise HTTPException(404, "unknown order")
@@ -488,7 +494,7 @@ def order_kyc_case(order_id: str, req: KycRequest, x_order_key: str = Header(def
     try:
         from udyam import kyc_extract
         ocr = req.ocr and kyc_extract.available()
-        res = kyc_service.verify_case_ocr(req.case_id, declared) if ocr else kyc_service.verify_case(req.case_id, declared)
+        res = kyc_service.verify_case_ocr(req.case_id, declared, _place(order_id)) if ocr else kyc_service.verify_case(req.case_id, declared, _place(order_id))
     except KeyError:
         raise HTTPException(404, f"unknown case {req.case_id}")
     return _kyc_response(order_id, res, cid, f"sample {req.case_id}" + (" (OCR)" if ocr else ""))
@@ -515,7 +521,7 @@ def order_kyc(order_id: str,
                 files[slot] = data
     if not files:
         raise HTTPException(400, "no documents received")
-    res = kyc_service.verify_upload(files, _declared(order_id))
+    res = kyc_service.verify_upload(files, _declared(order_id), _place(order_id))
     return _kyc_response(order_id, res, consent)
 
 

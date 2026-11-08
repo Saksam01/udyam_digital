@@ -73,7 +73,6 @@ def name_similarity(a: str, b: str, drop_legal_suffix=False) -> dict:
             "score": round(max(lev, dl), 3)}
 
 def split_prop_name(legal_name: str):
-    """'Neha Kaur (Prop."""
     m = re.match(r"^(.*?)\s*\(\s*Prop\.?\s*(.*?)\)\s*$", legal_name or "")
     return (m.group(1).strip(), m.group(2).strip()) if m else (None, None)
 

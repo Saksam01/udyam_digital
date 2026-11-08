@@ -159,7 +159,6 @@ def seed_partners(cities: list[str]):
 
 
 def partner_for(city: str | None, kind: str = "Field engineer") -> dict | None:
-    """Someone from the customer's own city: the one with the fewest open jobs."""
     city = canon_city(city)
     if not city:
         return None

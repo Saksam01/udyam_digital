@@ -73,7 +73,6 @@ def _decode(data: bytes):
 
 
 def _crop_page(bgr):
-    """Cuts the document out of a screenshot or photo (dark bars, desk) and whitens the rest, so tilt is measured on the page."""
     gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
     _, mask = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((25, 25), np.uint8))
@@ -445,7 +444,7 @@ def parse(doctype: str, text: str, registry_keys=None, lines: list[dict] | None 
 
 
 def _sig_by_position(out: dict, text: str) -> None:
-    """ID cards list name, designation, business, ID and validity in that order; use it when labels are too faint to read."""
+    # labels can be too faint on phone photos, fall back to the card's fixed field order
     labels = {w for _, l in FIELDS["sig"] for w in [l]}
     vals = []
     for ln in (x.strip() for x in text.splitlines()):
@@ -488,7 +487,6 @@ def _tess_plain(gray, psm: int, whitelist: str) -> str:
 
 
 def _reread_gstin(img, box, registry_keys, current: str) -> str | None:
-    """The GSTIN line read again on its own, enlarged and limited to A-Z/0-9. Used only if the result passes the check digit."""
     from udyam.kyc_rules import validate_gstin
     if validate_gstin(current or "")["checksum_ok"]:
         return None

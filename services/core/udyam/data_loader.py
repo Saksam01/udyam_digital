@@ -82,14 +82,14 @@ def kyc_case_summary(case_id: str) -> dict:
             "constitution": g.get("constitution"), "city_state": g.get("address", "").split(",")[-2:]}
 
 
-def assess_case(case_id: str, declared: str | None = None) -> dict:
+def assess_case(case_id: str, declared: str | None = None, place: dict | None = None) -> dict:
     fx = fixtures().get(case_id)
     if not fx:
         raise KeyError(case_id)
     gst = dict(fx["gst"]); gst["gstin"] = gst["gstin"].rstrip("?")
     lead = lead_for(gst["gstin"], gst.get("trade_name"), gst.get("address"))
     app = {"quality": BLURRED.get(case_id, {}), "gst": gst,
-           "udyam": fx.get("udyam"), "sig": fx["sig"], "bill": fx["bill"], "declared": declared}
+           "udyam": fx.get("udyam"), "sig": fx["sig"], "bill": fx["bill"], "declared": declared, "place": place}
     out = assess(app, registry(), lead)
     out["case_id"] = case_id
     out["business"] = gst.get("trade_name")

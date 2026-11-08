@@ -76,7 +76,6 @@ def ensure_seed():
 
 
 def _seed_won():
-    """Customers who activated last quarter, so the console's Won view has the real history."""
     if store.one("SELECT 1 AS n FROM leads WHERE origin='seed' AND status='won' LIMIT 1"):
         return
     cat, raw = data_loader.catalogue(), data_loader.catalogue_raw()

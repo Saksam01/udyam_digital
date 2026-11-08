@@ -93,3 +93,10 @@ def test_a_won_lead_is_not_shown_as_a_probability():
     from udyam import crm
     assert crm._display_likelihood({"status": "won", "stage": "Activated", "p_activate": 0.66}) == 1.0
     assert crm._display_likelihood({"status": "lost", "stage": "Quote accepted", "p_activate": 0.4}) == 0.0
+
+
+def test_address_proof_must_be_in_the_service_city():
+    assert kyc_service.verify_case("K02", "Harmony Dental Care", {"city": "Kolkata", "sites": 1})["verdict"] == "PASS"
+    assert kyc_service.verify_case("K02", "Harmony Dental Care", {"city": "Mumbai", "sites": 1})["verdict"] == "REJECT"
+    assert kyc_service.verify_case("K02", "Harmony Dental Care", {"city": "Mumbai", "sites": 3})["verdict"] == "REVIEW"
+    assert kyc_engine.city_in("Bengaluru", "12 MG Road, Bangalore, Karnataka")[0]
