@@ -5,7 +5,7 @@ CUR = r"(?:₹|rs\.?|inr|rupees?|rupaye|rupay|रु\.?|रुपये|रु�
 MULT = {"k": 1000, "thousand": 1000, "hazaar": 1000, "hazar": 1000, "हज़ार": 1000, "हजार": 1000, "lakh": 100000, "lac": 100000, "लाख": 100000}
 NUM = r"(\d[\d,]*(?:\.\d+)?)"
 MONEY = re.compile(rf"{CUR}\s*{NUM}\s*({'|'.join(MULT)})?|{NUM}\s*({'|'.join(MULT)})?\s*(?:/-|{CUR}|per month|/month|/mo\b|a month|mahina|mahine|महीना|महीने)", re.I)
-PID = re.compile(r"\bP\s?-?0?([1-9]|1\d|2[0-5])\b")
+PID = re.compile(r"\bP\s?-?(\d{1,3})\b")
 PCT = re.compile(r"\d+(?:\.\d+)?\s*%")
 BARE = re.compile(r"(?<![\w.])\d[\d,]*(?:\.\d+)?(?![\w.])")
 

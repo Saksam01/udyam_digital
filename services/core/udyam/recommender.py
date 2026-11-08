@@ -356,7 +356,7 @@ def suitable_products(cat, raw, profile_raw, city_tiers=None, categories=None, n
             "category": category, "description": row.get("description", ""), "unit": p.unit,
             "price_inr": int(mid) if mid == int(mid) else round(mid, 2), "price_range_inr": [p.pmin, p.pmax],
             "setup_inr": p.setup, "min_contract_months": p.min_contract, "install_days": p.install_days,
-            "requires_gstin": p.gstin, "eligible": not reasons, "eligibility_note": reasons[0] if reasons else None,
+            "requires_gstin": p.gstin, "requires_one_of": list(p.requires_one_of or []), "eligible": not reasons, "eligibility_note": reasons[0] if reasons else None,
             "in_recommended_bundle": pid in rec_items, "recommended_for_you": pid in rank,
             "popularity_pct": round(share * 100) if share >= 0.15 else None,
         })

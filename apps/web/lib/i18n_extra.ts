@@ -6,6 +6,7 @@ import mr from "./i18n/mr";
 import kn from "./i18n/kn";
 import pa from "./i18n/pa";
 import { MORE } from "./i18n/more";
+import { RESUME } from "./i18n/resume";
 
 type D = Record<string, string>;
 
@@ -441,7 +442,7 @@ const hi: D = {
   ev_reopened: "ऑर्डर फिर से खोला गया",
 };
 
-const merge = (base: D, lang: Lang): D => ({ ...base, ...MORE[lang] });
+const merge = (base: D, lang: Lang): D => ({ ...base, ...MORE[lang], ...RESUME[lang] });
 export const EXTRA: Record<Lang, D> = {
   en: merge(en, "en"), hi: merge(hi, "hi"), ta: merge(ta, "ta"), te: merge(te, "te"),
   bn: merge(bn, "bn"), mr: merge(mr, "mr"), kn: merge(kn, "kn"), pa: merge(pa, "pa"),

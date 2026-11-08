@@ -336,9 +336,21 @@ export interface SuitableProduct {
   min_contract_months: number;
   install_days: number;
   requires_gstin: boolean;
+  requires_one_of?: string[];
   eligible: boolean;
   eligibility_note: string | null;
   in_recommended_bundle: boolean;
+}
+
+export interface Understood {
+  business_type?: string;
+  segment?: Segment;
+  employees?: number;
+  num_sites?: number;
+  city?: string;
+  gstin_status?: GstinStatus;
+  need_tags?: string[];
+  need_groups?: string[];
 }
 
 export interface SuitableResult {
@@ -432,8 +444,8 @@ export function subscribe(
   };
 }
 
-async function postStrict<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+async function postStrict<T>(path: string, body: unknown, extra?: Record<string, string>): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: { "Content-Type": "application/json", ...(extra ?? {}) }, body: JSON.stringify(body) });
   if (!res.ok) {
     let detail = "";
     try {
@@ -487,6 +499,14 @@ async function get<T>(path: string, token?: string, extra?: Record<string, strin
 export const api = {
   advisor: (session_id: string, profile?: Profile, text = "", lang = "en", business?: string) =>
     post<AdvisorReply>("/api/v1/advisor/messages", { session_id, profile, text, lang, business }),
+  understand: (session_id: string, text: string, lang = "en") =>
+    post<Understood>("/api/v1/advisor/understand", { session_id, text, lang }),
+  resume: (ref: string, code: string) =>
+    postStrict<Order & { access_key?: string }>("/api/v1/orders/resume", { ref, code }).then((o) => {
+      if (o.access_key) rememberOrderKey(o.order_id, o.access_key);
+      return o;
+    }),
+  savePhone: (id: string, phone: string) => postStrict<{ ok: boolean }>(`/api/v1/orders/${id}/phone`, { phone }, ok(id)),
   suitable: (profile: Profile, categories: string[] = [], needs: string[] = []) =>
     post<SuitableResult>("/api/v1/catalogue/suitable", { profile, categories, needs }),
   quote: (profile: Profile, items: { product_id: string; qty: number }[], price_point = "list") =>
@@ -503,7 +523,7 @@ export const api = {
     session_id: string;
     lang: string;
   }) =>
-    postStrict<Order & { access_key?: string }>("/api/v1/orders", body).then((o) => {
+    postStrict<Order & { access_key?: string; resume_code?: string }>("/api/v1/orders", body).then((o) => {
       if (o.access_key) rememberOrderKey(o.order_id, o.access_key);
       return o;
     }),

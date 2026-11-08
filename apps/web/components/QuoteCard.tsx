@@ -44,7 +44,19 @@ export default function QuoteCard({
 
   const detail: Record<string, SuitableProduct> = {};
   for (const p of catalog?.products ?? []) detail[p.product_id] = p;
-  const addons = (catalog?.products ?? []).filter((p) => p.eligible && !items[p.product_id]);
+  const missingPre = (id: string) => {
+    const need = detail[id]?.requires_one_of ?? [];
+    if (!need.length || need.some((x) => items[x])) return null;
+    return need.find((x) => detail[x]?.eligible) ?? "";
+  };
+  const addons = (catalog?.products ?? []).filter((p) => p.eligible && !items[p.product_id] && missingPre(p.product_id) !== "");
+  const neededBy = (id: string) =>
+    quote.lines
+      .filter((l) => {
+        const need = detail[l.product_id]?.requires_one_of ?? [];
+        return l.product_id !== id && need.includes(id) && !need.some((x) => x !== id && items[x]);
+      })
+      .map((l) => lineLabel(lang, l.product_id, l.label ?? l.name));
 
   async function setItems(next: Record<string, number>) {
     setBusy(true);
@@ -57,7 +69,10 @@ export default function QuoteCard({
       setBusy(false);
     }
   }
-  const addProduct = (id: string) => setItems({ ...items, [id]: 1 });
+  const addProduct = (id: string) => {
+    const pre = missingPre(id);
+    setItems(pre ? { ...items, [pre]: 1, [id]: 1 } : { ...items, [id]: 1 });
+  };
   const setQty = (id: string, n: number) => setItems({ ...items, [id]: n });
   const maxQty = (l: QuoteLine) => (l.unit === "per site" ? Math.max(1, profile.num_sites) : 50);
   const removeProduct = (id: string) => {
@@ -211,7 +226,12 @@ export default function QuoteCard({
                             </button>
                           </span>
                         )}
-                        {CORE.has(l.product_id) ? (
+                        {neededBy(l.product_id).length > 0 ? (
+                          <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/70 px-3 text-[12px] font-semibold text-ink-500">
+                            <Lock size={12} />
+                            {t(lang, "neededFor").replace("{x}", neededBy(l.product_id).join(", "))}
+                          </span>
+                        ) : CORE.has(l.product_id) ? (
                           <span className="inline-flex h-9 items-center gap-1.5 rounded-full bg-white/70 px-3 text-[12px] font-semibold text-ink-500">
                             <Lock size={12} />
                             {t(lang, "coreLocked")}
@@ -248,6 +268,11 @@ export default function QuoteCard({
                     <IconTile icon={look.icon} tone={look.tone} size={40} />
                     <div className="mt-3 line-clamp-2 text-[15px] font-semibold leading-snug text-ink-900">{lineLabel(lang, p.product_id, p.label ?? p.name)}</div>
                     {p.description && <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-ink-500">{p.description}</p>}
+                    {missingPre(p.product_id) && (
+                      <p className="mt-1.5 text-[12px] font-semibold leading-snug text-info-600">
+                        {t(lang, "addsAlso").replace("{x}", lineLabel(lang, missingPre(p.product_id)!, detail[missingPre(p.product_id)!]?.label ?? detail[missingPre(p.product_id)!]?.name ?? ""))}
+                      </p>
+                    )}
                     <div className="mt-auto flex items-end justify-between pt-3">
                       <div>
                         <div className="text-[17px] font-bold tabular-nums text-ink-900">{rupees(p.price_inr)}</div>

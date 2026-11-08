@@ -395,7 +395,10 @@ def create_order(req: OrderRequest):
     lead_id = req.lead_id or crm.upsert_live_lead(req.session_id, prof, quote, req.lang, req.business, req.contact)
     if req.business or req.contact:
         crm.set_business(lead_id, req.business, req.contact)
-    return orders.create_order(lead_id, quote, req.business, store.canon_city(prof.get("city")))
+    o = orders.create_order(lead_id, quote, req.business, store.canon_city(prof.get("city")))
+    if req.contact:
+        orders.set_phone(o["order_id"], req.contact)
+    return o
 
 
 @app.get("/api/v1/orders/{order_id}")
@@ -405,6 +408,43 @@ def get_order(order_id: str, x_order_key: str = Header(default="")):
     if not o:
         raise HTTPException(404, "unknown order")
     return o
+
+
+class ResumeRequest(BaseModel):
+    ref: str
+    code: str
+
+
+class PhoneRequest(BaseModel):
+    phone: str
+
+
+_RESUME_TRIES: dict[str, list[float]] = {}
+
+
+@app.post("/api/v1/orders/resume")
+def resume_order(req: ResumeRequest, request: Request):
+    import time as _t
+    who = f"{request.client.host if request.client else ''}|{req.ref.strip().upper()}"
+    now = _t.time()
+    tries = [x for x in _RESUME_TRIES.get(who, []) if now - x < 900]
+    if len(tries) >= 5:
+        raise HTTPException(429, "Too many attempts. Please try again in 15 minutes.")
+    hit = orders.resume(req.ref, req.code)
+    if not hit:
+        _RESUME_TRIES[who] = tries + [now]
+        raise HTTPException(404, "We could not find an application with these details.")
+    _RESUME_TRIES.pop(who, None)
+    oid, key = hit
+    return {**orders.get(oid), "access_key": key}
+
+
+@app.post("/api/v1/orders/{order_id}/phone")
+def order_phone(order_id: str, req: PhoneRequest, x_order_key: str = Header(default="")):
+    _owner(order_id, x_order_key)
+    if not orders.set_phone(order_id, req.phone):
+        raise HTTPException(422, "Please enter a 10-digit Indian mobile number.")
+    return {"ok": True}
 
 
 @app.post("/api/v1/orders/{order_id}/assist")
@@ -559,6 +599,18 @@ def advisor_messages(req: AdvisorRequest):
         reply["profile"] = s["profile"]
         reply["lead_id"] = crm.upsert_live_lead(req.session_id, s["profile"], reply["quote_card"], req.lang, req.business)
     return reply
+
+
+class UnderstandRequest(BaseModel):
+    session_id: str = "demo"
+    text: str
+    lang: str = "en"
+
+
+@app.post("/api/v1/advisor/understand")
+def advisor_understand(req: UnderstandRequest):
+    s = SESSIONS.setdefault(req.session_id, {"lang": req.lang})
+    return advisor.understand(req.text[:600], req.lang, s.setdefault("vault", {}))
 
 
 DEMO = os.getenv("DEMO_MODE", "0" if os.getenv("APP_ENV") == "production" else "1") == "1"

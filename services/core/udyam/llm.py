@@ -1,7 +1,7 @@
 from __future__ import annotations
 import base64, json, os, re, urllib.request, urllib.error
 
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 
@@ -66,7 +66,7 @@ def extract_document(data: bytes, doctype: str, mime: str = "image/png") -> dict
 PROFILE_SYSTEM = (
     "You turn what a small-business owner says into a structured profile for a telecom bundle advisor. "
     "Reply with JSON only. Never mention prices or products by id. Keys: business_type (one of the allowed keys or null), "
-    "employees (integer or null), num_sites (integer or null), city (string or null), gstin_status (\"active\" if they say they have "
+    "employees (integer or null), num_sites (integer or null), city (the city name in English, for example Kolkata, or null), gstin_status (\"active\" if they say they have "
     "a GST number, \"none\" if they say they do not, else null), need_tags (list from the allowed tags), summary (one short plain "
     "sentence in the owner's language confirming what you understood)."
 )

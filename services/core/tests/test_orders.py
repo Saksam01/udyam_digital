@@ -90,3 +90,15 @@ def test_engineer_is_from_the_customers_city():
     store.seed_partners(["Pune", "Kolkata"])
     o = orders.apply_kyc(_order()["order_id"], "PASS", [], {})
     assert o["engineer"]["city"] == "Pune"
+
+
+def test_resume_with_order_id_or_phone_and_code():
+    o = _order()
+    code = o["resume_code"]
+    store.x("INSERT INTO leads(lead_id) VALUES ('LV-TEST')")
+    assert orders.set_phone(o["order_id"], "+91 98765 43210")
+    assert orders.resume(o["order_id"].lower(), code)[0] == o["order_id"]
+    assert orders.resume("9876543210", code)[0] == o["order_id"]
+    assert orders.resume(o["order_id"], "000000" if code != "000000" else "111111") is None
+    assert orders.resume("12345", code) is None
+    assert not orders.set_phone(o["order_id"], "12345")

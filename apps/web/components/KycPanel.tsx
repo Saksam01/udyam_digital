@@ -24,6 +24,7 @@ import { api, ChecklistItem, CustomerFinding, KycCase, KycUploadResponse, Order,
 import { Lang, t } from "@/lib/i18n";
 import { prepareUpload } from "@/lib/upload";
 import LangPill from "./LangPill";
+import { ResumeCard, SaveCard } from "./Resume";
 import { Card, Hero, IconTile, Money, PersonCard, Tone, btn } from "./ui";
 
 const SLOTS: { key: string; labelKey: string; required: boolean; icon: LucideIcon; tone: Tone }[] = [
@@ -176,6 +177,9 @@ export default function KycPanel({
         >
           {header}
         </Hero>
+        <div className="mt-4 px-4">
+          <ResumeCard lang={lang} onOrder={onOrder} />
+        </div>
       </div>
     );
   }
@@ -494,6 +498,8 @@ export default function KycPanel({
             )}
           </Card>
         )}
+
+        {showUpload && <SaveCard lang={lang} order={order} />}
 
         {cases.length > 0 && showUpload && (
           <Card className={`p-4 transition-opacity ${consented ? "" : "pointer-events-none select-none opacity-45 grayscale"}`} aria-disabled={!consented}>

@@ -52,6 +52,22 @@ function looksBlank(canvas: HTMLCanvasElement): boolean {
   return max - min < 12;
 }
 
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const h = setTimeout(() => reject(new Error("timeout")), ms);
+    p.then(
+      (v) => {
+        clearTimeout(h);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(h);
+        reject(e);
+      },
+    );
+  });
+}
+
 export async function prepareUpload(f: File): Promise<File> {
   const bytes = await readBytes(f);
   const copy = new Blob([bytes], { type: f.type || "application/octet-stream" });
@@ -59,7 +75,7 @@ export async function prepareUpload(f: File): Promise<File> {
   if (!f.type.startsWith("image/")) return original;
   let pic: Decoded | null = null;
   try {
-    pic = await decode(copy);
+    pic = await withTimeout(decode(copy), 15000);
     if (!pic.width || !pic.height) return original;
     const scale = Math.min(1, MAX_W / pic.width, MAX_H / pic.height);
     const canvas = document.createElement("canvas");
@@ -71,7 +87,7 @@ export async function prepareUpload(f: File): Promise<File> {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(pic.source, 0, 0, canvas.width, canvas.height);
     if (looksBlank(canvas)) return original;
-    const out = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.92));
+    const out = await withTimeout(new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.92)), 15000);
     if (!out || out.size < 2048) return original;
     return new File([out], f.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
   } catch {

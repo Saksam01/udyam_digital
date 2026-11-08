@@ -1,5 +1,5 @@
 from __future__ import annotations
-import os, secrets, time, uuid
+import hashlib, hmac, os, re, secrets, time, uuid
 from datetime import datetime, timedelta
 from udyam import store
 
@@ -68,7 +68,8 @@ def create_order(lead_id: str, quote: dict, business: str | None, city: str | No
     now = _now()
     store.x("INSERT INTO orders(order_id, lead_id, created_at, updated_at, status, quote, lines, kyc, partner_id, business, city) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (oid, lead_id, now, now, "awaiting_kyc", store.dumps(quote), store.dumps(lines), None, None, business, city))
-    store.x("UPDATE orders SET access_key=? WHERE order_id=?", (secrets.token_urlsafe(18), oid))
+    pin = f"{secrets.randbelow(10**6):06d}"
+    store.x("UPDATE orders SET access_key=?, resume_hash=? WHERE order_id=?", (secrets.token_urlsafe(18), _pin_hash(oid, pin), oid))
     prev = (store.loads((store.one("SELECT bundle FROM leads WHERE lead_id=?", (lead_id,)) or {}).get("bundle"), {}) or {})
     kept = {(l["label"], l["spec"]) for l in lines}
     was = {(l["label"], l["spec"]) for l in prev.get("lines", [])}
@@ -82,7 +83,48 @@ def create_order(lead_id: str, quote: dict, business: str | None, city: str | No
     store.log("quote_accepted", f"Accepted {quote.get('bundle_name') or 'bundle'} at ₹{quote['tax']['monthly_ex_gst']}/month + GST", lead_id, oid, "customer")
     out = get(oid)
     out["access_key"] = access_key(oid)
+    out["resume_code"] = pin
     return out
+
+
+def _pin_hash(order_id: str, pin: str) -> str:
+    return hashlib.sha256(f"{order_id}:{pin}".encode()).hexdigest()
+
+
+def clean_phone(phone: str | None) -> str | None:
+    digits = re.sub(r"\D", "", phone or "")
+    if len(digits) == 12 and digits.startswith("91"):
+        digits = digits[2:]
+    return digits if re.fullmatch(r"[6-9]\d{9}", digits) else None
+
+
+def set_phone(order_id: str, phone: str) -> bool:
+    o = _row(order_id)
+    p = clean_phone(phone)
+    if not o or not p:
+        return False
+    store.x("UPDATE leads SET phone=?, updated_at=? WHERE lead_id=?", (p, _now(), o["lead_id"]))
+    return True
+
+
+def resume(ref: str, code: str) -> tuple[str, str] | None:
+    """Order id or mobile number plus the 6-digit code given at order time."""
+    ref = (ref or "").strip().upper().replace(" ", "")
+    code = re.sub(r"\D", "", code or "")
+    if len(code) != 6:
+        return None
+    if re.fullmatch(r"ACC-[0-9A-F]{8}", ref):
+        rows = store.q("SELECT order_id, access_key, resume_hash FROM orders WHERE order_id=?", (ref,))
+    else:
+        phone = clean_phone(ref)
+        if not phone:
+            return None
+        rows = store.q("SELECT o.order_id, o.access_key, o.resume_hash FROM orders o JOIN leads l ON l.lead_id=o.lead_id "
+                       "WHERE l.phone=? AND o.status != 'cancelled' ORDER BY o.created_at DESC", (phone,))
+    for r in rows:
+        if r["resume_hash"] and hmac.compare_digest(r["resume_hash"], _pin_hash(r["order_id"], code)):
+            return r["order_id"], r["access_key"]
+    return None
 
 
 def access_key(order_id: str) -> str | None:

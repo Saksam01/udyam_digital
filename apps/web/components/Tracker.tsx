@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { Order, OrderLine } from "@/lib/api";
 import { Lang, t } from "@/lib/i18n";
 import LangPill from "./LangPill";
+import { ResumeCard } from "./Resume";
 import { lineLabel } from "./QuoteCard";
 import { orderProgress, statusTone } from "./Home";
 import { Card, Chip, ChipTone, CountUp, Hero, IconTile, LiveDot, Money, PersonCard, Ring, Segments, btn, productLook } from "./ui";
@@ -45,12 +46,14 @@ export default function Tracker({
   setLang,
   onVerify,
   onPlan,
+  onOrder,
 }: {
   order: Order | null;
   lang: Lang;
   setLang: (l: Lang) => void;
   onVerify: () => void;
   onPlan: () => void;
+  onOrder: (o: Order) => void;
 }) {
   const head = (title: string, right?: React.ReactNode) => (
     <div className="flex items-start justify-between gap-3 pt-2">
@@ -79,6 +82,9 @@ export default function Tracker({
         >
           {head(t(lang, "tr_progress"))}
         </Hero>
+        <div className="mt-4 px-4">
+          <ResumeCard lang={lang} onOrder={onOrder} />
+        </div>
       </div>
     );
   }

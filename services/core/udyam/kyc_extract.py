@@ -81,13 +81,26 @@ def _crop_page(bgr):
         return bgr
     c = max(cnts, key=cv2.contourArea)
     area = cv2.contourArea(c) / (gray.shape[0] * gray.shape[1])
-    if area < 0.15 or area > 0.9:
+    if area < 0.15 or area > 0.98:
+        return bgr
+    hull = cv2.convexHull(c)
+    quad = cv2.approxPolyDP(hull, 0.02 * cv2.arcLength(hull, True), True)
+    x, y, w, h = cv2.boundingRect(c)
+    if len(quad) == 4 and cv2.contourArea(quad) > 0.8 * cv2.contourArea(c) and cv2.contourArea(quad) < 0.97 * w * h:
+        pts = quad.reshape(4, 2).astype(np.float32)
+        sm, df = pts.sum(axis=1), np.diff(pts, axis=1).ravel()
+        tl, br, tr, bl = pts[np.argmin(sm)], pts[np.argmax(sm)], pts[np.argmin(df)], pts[np.argmax(df)]
+        w = int(max(np.linalg.norm(tr - tl), np.linalg.norm(br - bl)))
+        h = int(max(np.linalg.norm(bl - tl), np.linalg.norm(br - tr)))
+        if w > 200 and h > 200:
+            M = cv2.getPerspectiveTransform(np.float32([tl, tr, br, bl]), np.float32([[0, 0], [w, 0], [w, h], [0, h]]))
+            return cv2.warpPerspective(bgr, M, (w, h), borderValue=(255, 255, 255))
+    if area > 0.9:
         return bgr
     page = np.zeros_like(gray)
-    cv2.drawContours(page, [cv2.convexHull(c)], -1, 255, -1)
+    cv2.drawContours(page, [hull], -1, 255, -1)
     out = bgr.copy()
     out[page == 0] = 255
-    x, y, w, h = cv2.boundingRect(c)
     return out[y:y + h, x:x + w]
 
 
@@ -227,6 +240,14 @@ def _words(s: str) -> list[str]:
 
 
 def _label_hit(line: str, spec: list) -> tuple[str, str] | None:
+    hit = _label_hit_once(line, spec)
+    words = line.split()
+    if hit is None and len(words) > 1 and len(words[0]) <= 2 and words[1][:1].isalpha():
+        hit = _label_hit_once(" ".join(words[1:]), spec)
+    return hit
+
+
+def _label_hit_once(line: str, spec: list) -> tuple[str, str] | None:
     raw_words = line.split()
     best = None
     for field, label in spec:
@@ -309,7 +330,21 @@ def read_image(data: bytes) -> dict:
     if bgr is None:
         print("kyc upload: cannot decode file, first bytes", data[:12].hex(), "size", len(data))
         return {"ok": False, "reason": "unreadable_file"}
-    bgr = _resize(_crop_page(bgr))
+    cropped = _crop_page(bgr)
+    best = _read(_resize(cropped))
+    if best["label_score"] < 3 and cropped.shape != bgr.shape:
+        whole = _read(_resize(bgr))
+        if whole["label_score"] > best["label_score"]:
+            best = whole
+            cropped = bgr
+    if best["angle"] in (90, 180, 270):
+        upright = _read(_resize(np.ascontiguousarray(np.rot90(cropped, k={90: 1, 180: 2, 270: 3}[int(best["angle"])]))))
+        if upright["label_score"] >= best["label_score"]:
+            best = upright
+    return best
+
+
+def _read(bgr) -> dict:
     q = quality(cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY))
     clean = _remove_watermark(bgr)
     est = _best_angle(clean)
@@ -449,6 +484,8 @@ def _sig_by_position(out: dict, text: str) -> None:
     vals = []
     for ln in (x.strip() for x in text.splitlines()):
         low = " ".join(_words(ln))
+        if len(low.split()) > 1 and len(low.split()[0]) <= 2 and " ".join(low.split()[1:]) in labels | {"id no", "valid till"}:
+            continue
         if not ln or NOISE.search(ln) or any(k in low for k in TITLES["sig"]) or low in labels or low in ("id no", "valid till"):
             continue
         vals.append(ln)

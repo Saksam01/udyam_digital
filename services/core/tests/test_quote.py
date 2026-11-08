@@ -30,3 +30,12 @@ def test_gstin_product_blocked_without_gstin():
     q = build_quote(CAT, MICRO, {"P01": 1, "P15": 1})
     assert q["status"] == "blocked"
     assert any(v["rule"] == "G.gstin" for v in q["violations"])
+
+
+def test_dependency_message_names_the_products():
+    from udyam import recommender, data_loader
+    prof = {"segment": "micro", "business_type": "kirana", "employees": 3, "num_sites": 1, "city": "Pune", "gstin_status": "none"}
+    q = recommender.quote_items(data_loader.catalogue(), data_loader.catalogue_raw(), prof, {"P23": 1}, data_loader.city_tiers())
+    assert q["status"] == "blocked"
+    msg = next(v["message"] for v in q["violations"] if v["severity"] == "block")
+    assert "Biz Fibre 100" in msg and "P01" not in msg

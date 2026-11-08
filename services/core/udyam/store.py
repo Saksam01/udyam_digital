@@ -49,6 +49,8 @@ def db() -> sqlite3.Connection:
             cols = {r[1] for r in _conn.execute("PRAGMA table_info(orders)")}
             if "access_key" not in cols:
                 _conn.execute("ALTER TABLE orders ADD COLUMN access_key TEXT")
+            if "resume_hash" not in cols:
+                _conn.execute("ALTER TABLE orders ADD COLUMN resume_hash TEXT")
         return _conn
 
 

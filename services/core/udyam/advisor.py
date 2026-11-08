@@ -210,28 +210,166 @@ _MISSING_Q = {
 }
 
 
+KEYWORDS = {
+    "kirana": ["kirana", "grocery", "general store", "किराना", "মুদি", "கிராணா", "మళిగ", "किराणा", "ಕಿರಾಣಿ", "ਕਰਿਆਨਾ"],
+    "salon": ["salon", "parlour", "parlor", "beauty", "सैलून", "পার্লার", "সেলুন", "சலூன்", "సెలూన్", "ಸಲೂನ್", "ਸੈਲੂਨ"],
+    "pharmacy": ["pharmacy", "chemist", "medical store", "फार्मेसी", "दवा", "ফার্মেসি", "மருந்தகம்", "ఫార్మసీ", "ಫಾರ್ಮಸಿ", "ਫਾਰਮੇਸੀ"],
+    "bakery": ["bakery", "bake", "बेकरी", "বেকারি", "பேக்கரி", "బేకరీ", "ಬೇಕರಿ", "ਬੇਕਰੀ"],
+    "apparel": ["boutique", "garment shop", "clothing", "कपड़े"],
+    "mobile_repair": ["mobile repair", "phone repair", "मोबाइल रिपेयर", "மொபைல் ரிப்பேர்", "మొబైల్ రిపేర్"],
+    "dental": ["dental", "dentist", "डेंटल", "ডেন্টাল", "பல் மருத்துவ"],
+    "clinic": ["clinic", "doctor", "क्लिनिक", "ক্লিনিক", "கிளினிக்", "క్లినిక్", "ಕ್ಲಿನಿಕ್", "ਕਲੀਨਿਕ"],
+    "diagnostic": ["diagnostic", "pathology", "lab", "डायग्नोस्टिक", "ডায়াগনস্টিক", "ಡಯಾಗ್ನೋಸ್ಟಿಕ್"],
+    "ca": ["ca firm", "chartered accountant", "accountant", "सीए", "চার্টার্ড"],
+    "coaching": ["coaching", "tuition", "institute", "कोचिंग", "কোচিং", "கோச்சிங்"],
+    "law": ["law", "lawyer", "advocate", "legal", "वकील", "লয়্যার", "ஆலோசகர்", "लॉ"],
+    "software": ["software", "it company", "saas", "सॉफ्टवेयर"],
+    "consulting": ["consulting", "consultancy", "consultant"],
+    "agency": ["agency", "marketing agency", "design studio"],
+    "restaurant": ["restaurant", "cafe", "dhaba", "रेस्टोरेंट", "রেস্তোরাঁ", "உணவகம்", "రెస్టారెంట్", "ਰੈਸਟੋਰੈਂਟ"],
+    "hotel": ["hotel", "guest house", "homestay", "होटल", "হোটেল", "ஹோட்டல்", "హోటల్", "ಹೋಟೆಲ್", "ਹੋਟਲ"],
+    "gym": ["gym", "fitness", "जिम", "জিম", "ஜிம்", "జిమ్", "ಜಿಮ್", "ਜਿਮ"],
+    "preschool": ["preschool", "play school", "playschool", "nursery", "प्ले स्कूल"],
+    "autoparts": ["auto parts", "autoparts", "spare parts", "ऑटो पार्ट्स", "ਆਟੋ ਪਾਰਟਸ"],
+    "textile": ["textile", "weaving", "कपड़ा मिल"],
+    "factory": ["factory", "manufacturing", "plant", "फैक्ट्री", "কারখানা"],
+    "printing": ["printing", "press", "प्रिंटिंग"],
+    "packaging": ["packaging"],
+    "food_processing": ["food processing"],
+    "retail": ["retail", "shop", "store", "दुकान", "দোকান", "கடை", "దుకాణం", "ದುಕಾನ", "ਦੁਕਾਨ"],
+}
+_INDIC_DIGITS = str.maketrans("०१२३४५६७८९০১২৩৪৫৬৭৮৯௦௧௨௩௪௫௬௭௮௯౦౧౨౩౪౫౬౭౮౯೦೧೨೩೪೫೬೭೮೯੦੧੨੩੪੫੬੭੮੯", "0123456789" * 6)
+_NO_GST = re.compile(r"\b(no|not|without|nahi|nahin)\b[^.]{0,20}\bgst|gst\b[^.]{0,20}\b(no|nahi|nahin|not)\b|नहीं|নেই|இல்லை|లేదు", re.I)
+
+
+NEED_WORDS = {
+    "internet": ["internet", "wifi", "wi-fi", "broadband", "fibre", "fiber", "इंटरनेट", "ইন্টারনেট", "இணையம்", "ఇంటర్నెట్", "ಇಂಟರ್ನೆಟ್", "ਇੰਟਰਨੈੱਟ"],
+    "backup_internet": ["backup internet", "backup line", "failover", "never goes down"],
+    "static_ip": ["static ip", "fixed ip"],
+    "branch_network": ["connect branches", "connect our branches", "branch network", "vpn"],
+    "mobile_lines": ["sim", "sims", "mobile line", "mobile lines", "phone line", "postpaid"],
+    "phone_system": ["phone system", "ivr", "landline", "intercom", "reception phone"],
+    "toll_free": ["toll free", "toll-free", "1800"],
+    "sms": ["sms", "text message", "text reminder"],
+    "whatsapp": ["whatsapp", "व्हाट्सएप", "হোয়াটসঅ্যাপ", "வாட்ஸ்அப்", "వాట్సాప్", "ವಾಟ್ಸಾಪ್", "ਵਟਸਐਪ"],
+    "email": ["email", "e-mail", "emails", "mail id"],
+    "cloud_backup": ["cloud backup", "data backup", "backup of data"],
+    "website": ["website", "web site", "online store"],
+    "billing": ["billing", "pos", "upi", "invoice", "invoicing", "बिलिंग"],
+    "device_security": ["antivirus", "device security", "laptop security"],
+    "firewall": ["firewall", "cyber security", "cybersecurity"],
+    "guest_wifi": ["guest wifi", "guest wi-fi", "wifi for customers", "wi-fi for customers", "wifi for guests"],
+    "cctv": ["cctv", "camera", "cameras", "कैमरा", "সিসিটিভি"],
+    "machine_monitoring": ["machine monitoring", "machines", "machine"],
+    "vehicle_tracking": ["vehicle", "vehicles", "gps", "fleet", "delivery van"],
+}
+NEED_GROUP = {"internet": "internet", "backup_internet": "internet", "static_ip": "internet", "branch_network": "internet",
+              "mobile_lines": "calls", "phone_system": "calls", "toll_free": "calls", "sms": "customer_chat", "whatsapp": "customer_chat",
+              "email": "cloud", "cloud_backup": "cloud", "website": "cloud", "billing": "payments", "device_security": "security",
+              "firewall": "security", "cctv": "security", "guest_wifi": "wifi", "machine_monitoring": "tracking", "vehicle_tracking": "tracking"}
+STAFF_WORDS = r"people|persons?|staff|employees?|workers?|doctors?|dentists?|engineers?|trainers?|teachers?|lawyers?|advocates?|members?|log|लोग|कर्मचारी|स्टाफ|জন|কর্মী|பேர்|ஊழியர்|మంది|సిబ్బంది|ಜನ|ಸಿಬ್ಬಂದಿ|ਲੋਕ|ਕਰਮਚਾਰੀ|लोक"
+SITE_WORDS = r"outlets|branches|locations|sites|stores|shops|offices|clinics|centres|centers|units|warehouses|ब्रांच|शाखा|आउटलेट"
+CITY_ALIASES = {"bangalore": "Bengaluru", "bombay": "Mumbai", "calcutta": "Kolkata", "madras": "Chennai", "gurgaon": "Gurugram",
+                "trivandrum": "Thiruvananthapuram", "baroda": "Vadodara", "poona": "Pune"}
+
+
+def _has(low: str, w: str) -> bool:
+    return bool(re.search(rf"\b{re.escape(w)}(?:s|es)?\b", low)) if w.isascii() else w in low
+
+
+def canon_city(city) -> str | None:
+    if not city:
+        return None
+    low = str(city).strip().lower()
+    for c in data_loader.city_tiers():
+        if c.lower() == low:
+            return c
+    return CITY_ALIASES.get(low) or (str(city).strip().title() if str(city).isascii() and re.search(r"[a-z]{3}", low) else None)
+
+
+def keyword_profile(text: str) -> dict:
+    """Reads type, size, sites, city, GST and needs from one sentence without the language model."""
+    low = text.lower().translate(_INDIC_DIGITS)
+    out: dict = {}
+    for key, words in KEYWORDS.items():
+        if any(_has(low, w) for w in words):
+            out["business_type"] = key
+            break
+    sites = re.search(rf"(\d{{1,3}})\s*-?\s*(?:{SITE_WORDS})\b", low)
+    if sites:
+        out["num_sites"] = int(sites.group(1))
+    staff = re.search(rf"(\d{{1,4}})\s*-?\s*(?:{STAFF_WORDS})", low)
+    if staff:
+        out["employees"] = int(staff.group(1))
+        out["_staff_explicit"] = True
+    else:
+        nums = [m for m in re.finditer(r"(?<![\w\[])\d{1,4}(?![\w\]])", low) if not (sites and m.start() == sites.start(1))]
+        if nums:
+            out["employees"] = int(nums[0].group(0))
+    for c in data_loader.city_tiers():
+        if re.search(rf"\b{re.escape(c.lower())}\b", low):
+            out["city"] = c
+            break
+    else:
+        for a, c in CITY_ALIASES.items():
+            if a in low:
+                out["city"] = c
+                break
+    if "gst" in low or "जीएसटी" in low:
+        out["gstin_status"] = "none" if _NO_GST.search(low) else "active"
+    tags = [t for t, words in NEED_WORDS.items() if any(_has(low, w) for w in words)]
+    if "guest_wifi" in tags and not any(_has(low, w) for w in ("internet", "broadband", "fibre", "fiber", "fast wifi", "fast wi-fi")):
+        tags.remove("internet")
+    out["need_tags"] = tags
+    return out
+
+
+def understand(text: str, lang: str, vault: dict | None = None) -> dict:
+    """Everything one message says about the business, merged from the language model and the keyword reader."""
+    clean = redact(text, vault if vault is not None else {})
+    kw = keyword_profile(clean)
+    ai = llm.parse_profile(clean, lang, list(profiles.SPECS), list(profiles.NEED_TAGS)) or {}
+    out: dict = {}
+    bt = ai.get("business_type") if ai.get("business_type") in profiles.SPECS else kw.get("business_type")
+    if bt:
+        out["business_type"] = bt
+        out["segment"] = profiles.SPECS[bt].segment
+    for key, lo, hi in (("employees", 1, 500), ("num_sites", 1, 50)):
+        v = kw.get(key) if (key == "employees" and kw.get("_staff_explicit")) or key == "num_sites" and kw.get(key) else ai.get(key)
+        if v in (None, ""):
+            v = kw.get(key)
+        try:
+            if v not in (None, ""):
+                out[key] = max(lo, min(hi, int(v)))
+        except (TypeError, ValueError):
+            pass
+    city = canon_city(ai.get("city")) or kw.get("city")
+    if city:
+        out["city"] = city
+    gst = ai.get("gstin_status") if ai.get("gstin_status") in ("active", "none", "unverified") else kw.get("gstin_status")
+    if gst:
+        out["gstin_status"] = gst
+    tags = sorted({t for t in (ai.get("need_tags") or []) if t in profiles.NEED_TAGS} | set(kw.get("need_tags") or []))
+    if tags:
+        out["need_tags"] = tags
+        out["need_groups"] = sorted({NEED_GROUP[t] for t in tags if t in NEED_GROUP})
+    return out
+
+
 def profile_from_text(session: dict, text: str, lang: str) -> dict | None:
     """Free text or speech to a profile."""
-    vault = session.setdefault("vault", {})
-    parsed = llm.parse_profile(redact(text, vault), lang, list(profiles.SPECS), list(profiles.NEED_TAGS))
-    if not parsed:
-        return None
+    parsed = understand(text, lang, session.setdefault("vault", {}))
     part = session.setdefault("partial", {})
-    for k, v in parsed.items():
-        if v not in (None, "", []) and k != "summary":
-            part[k] = v
+    part.update(parsed)
     spec = profiles.SPECS.get(part.get("business_type") or "")
     if not spec:
         return {"text": _MISSING_Q["type"], "quote_card": None, "bundle": None, "chips": [], "validator": "deterministic"}
-    try:
-        emp = int(part.get("employees"))
-    except (TypeError, ValueError):
+    if not part.get("employees"):
         return {"text": _MISSING_Q["employees"].format(name=spec.name), "quote_card": None, "bundle": None, "chips": [],
                 "validator": "deterministic"}
-    tags = [t for t in (part.get("need_tags") or []) if t in profiles.NEED_TAGS]
-    session["profile"] = {"segment": spec.segment, "business_type": spec.key, "employees": emp,
+    session["profile"] = {"segment": spec.segment, "business_type": spec.key, "employees": int(part["employees"]),
                           "num_sites": int(part.get("num_sites") or 1), "city": part.get("city"),
-                          "gstin_status": part.get("gstin_status") or "none", "need_tags": tags}
+                          "gstin_status": part.get("gstin_status") or "none", "need_tags": part.get("need_tags") or []}
     session.pop("partial", None)
     return None
 
@@ -260,7 +398,7 @@ def run_turn(session: dict, user_text: str) -> dict:
     if profile and profile.get("segment"):
         return deterministic_reply(profile, session.get("lang", "en"))
     lang = session.get("lang", "en")
-    if user_text.strip() and llm.available():
+    if user_text.strip():
         asked = profile_from_text(session, user_text, lang)
         if session.get("profile"):
             return deterministic_reply(session["profile"], lang)

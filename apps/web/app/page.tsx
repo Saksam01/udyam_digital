@@ -8,6 +8,7 @@ import AdvisorChat, { ProceedMeta } from "@/components/AdvisorChat";
 import KycPanel from "@/components/KycPanel";
 import Tracker from "@/components/Tracker";
 import Home, { Tab } from "@/components/Home";
+import { rememberCode } from "@/components/Resume";
 
 function safeGet(key: string): string | null {
   try {
@@ -28,8 +29,17 @@ function safeSet(key: string, value: string | null) {
 export default function Page() {
   const [tab, setTab] = useState<Tab>("home");
   const [lang, setLang] = useState<Lang>("en");
-  const [, setProfile] = useState<Profile | null>(null);
-  const [quote, setQuote] = useState<Quote | null>(null);
+  const [profile, setProfileState] = useState<Profile | null>(null);
+  const [quote, setQuoteState] = useState<Quote | null>(null);
+  const setQuote = useCallback((q: Quote | null) => {
+    setQuoteState(q);
+    if (!q) safeSet("udyam_quote", null);
+  }, []);
+  const setProfile = useCallback((p: Profile | null) => setProfileState(p), []);
+
+  useEffect(() => {
+    if (quote && profile) safeSet("udyam_quote", JSON.stringify({ quote, profile }));
+  }, [quote, profile]);
   const [order, setOrderState] = useState<Order | null>(null);
   const [sessionId, setSessionId] = useState("");
   const [creating, setCreating] = useState(false);
@@ -51,6 +61,7 @@ export default function Page() {
 
   const startFresh = useCallback(() => {
     safeSet("udyam_order", null);
+    safeSet("udyam_quote", null);
     setOrderState(null);
     setQuote(null);
     setProfile(null);
@@ -77,6 +88,25 @@ export default function Page() {
       safeSet("udyam_sid", sid);
     }
     setSessionId(sid);
+    const resumeId = new URL(window.location.href).searchParams.get("resume");
+    if (resumeId) {
+      try {
+        window.sessionStorage.setItem("udyam_resume_ref", resumeId);
+      } catch {
+        /* storage unavailable */
+      }
+      setTab("kyc");
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    try {
+      const q = JSON.parse(safeGet("udyam_quote") ?? "null");
+      if (q?.quote && q?.profile) {
+        setQuoteState(q.quote);
+        setProfileState(q.profile);
+      }
+    } catch {
+      safeSet("udyam_quote", null);
+    }
     const saved = safeGet("udyam_order");
     if (saved) {
       api
@@ -130,6 +160,7 @@ export default function Page() {
         session_id: sessionId,
         lang,
       });
+      if (o.resume_code) rememberCode(o.order_id, o.resume_code);
       setOrder(o);
       setTab("kyc");
     } catch (e) {
@@ -141,6 +172,18 @@ export default function Page() {
     } finally {
       setCreating(false);
     }
+  }
+
+  function resumed(o: Order) {
+    setOrder(o);
+    prevStatus.current = o.status;
+    const needs = o.status === "awaiting_kyc" || o.status === "kyc_rejected";
+    setTab(needs ? "kyc" : "tracker");
+  }
+
+  function resumedOrSet(o: Order) {
+    if (!order) resumed(o);
+    else setOrder(o);
   }
 
   function startAdvisor(mode: "text" | "voice") {
@@ -185,6 +228,7 @@ export default function Page() {
               quote={quote}
               setQuote={setQuote}
               setProfile={setProfile}
+              savedProfile={profile}
               onProceed={startOrder}
               startMode={startMode}
               onStartHandled={() => setStartMode(null)}
@@ -195,10 +239,10 @@ export default function Page() {
           )}
         </div>
         <div className={tab === "kyc" ? "scroll-area h-full overflow-y-auto" : "hidden"}>
-          <KycPanel key={order?.order_id ?? "none"} lang={lang} setLang={setLang} order={order} onOrder={setOrder} onTrack={() => setTab("tracker")} onPlan={() => setTab("advisor")} />
+          <KycPanel key={order?.order_id ?? "none"} lang={lang} setLang={setLang} order={order} onOrder={resumedOrSet} onTrack={() => setTab("tracker")} onPlan={() => setTab("advisor")} />
         </div>
         <div className={tab === "tracker" ? "scroll-area h-full overflow-y-auto" : "hidden"}>
-          <Tracker order={order} lang={lang} setLang={setLang} onVerify={() => setTab("kyc")} onPlan={() => setTab("advisor")} />
+          <Tracker order={order} lang={lang} setLang={setLang} onVerify={() => setTab("kyc")} onPlan={() => setTab("advisor")} onOrder={resumed} />
         </div>
       </div>
 

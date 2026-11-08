@@ -50,7 +50,7 @@ def evaluate(cat, profile: dict, items: dict[str, int]) -> list[Violation]:
             elif gs != "active":
                 v.append(Violation("G.gstin", pid, "block", f"{p.name} cannot be sold without a valid, active GSTIN (status: {gs})", ALTERNATIVES.get(pid, [])))
         if p.requires_one_of and not any(x in items for x in p.requires_one_of):
-            v.append(Violation("G.requires_one_of", pid, "block", f"{p.name} needs one of {'|'.join(p.requires_one_of)} in the same bundle", list(p.requires_one_of)))
+            v.append(Violation("G.requires_one_of", pid, "block", f"{p.name} needs {' or '.join(cat[x].name for x in p.requires_one_of if x in cat)} in the same plan", list(p.requires_one_of)))
         if p.requires_one_of and any(x in items for x in p.requires_one_of):
             if not any(x in items and not _gate_fail(cat[x], profile) for x in p.requires_one_of):
                 v.append(Violation("G.prereq_eligible", pid, "block", f"the prerequisite for {p.name} is itself not eligible"))

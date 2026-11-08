@@ -8,21 +8,28 @@ on a phone, in its own language. Built for the Airtel SYNC 2026 hackathon (Track
 - **API docs:** https://udyam-api-grmtzh7dwq-el.a.run.app/docs
 
 The idea throughout is that code decides and language explains. Prices, eligibility, KYC verdicts and lead
-scores come from rules and models we can inspect. The language model only rephrases, and a validator blocks
-any number in a reply that the engine did not produce.
+scores come from rules and models we can inspect. The language model only helps understand what the owner
+says and rephrases replies (a keyword reader takes over if it is unavailable), and a validator blocks any
+number in a reply that the engine did not produce.
 
 ## What it does
 
 **For the business owner (customer app)**
 - **Advisor** in 8 languages (English, Hindi, Tamil, Telugu, Bengali, Marathi, Kannada, Punjabi), by voice or
-  by tapping and typing. It asks about the business type, staff, locations, city and needs (in plain outcomes
-  like "billing and payments", not product names), then sizes a bundle from the 25-product catalogue.
+  by tapping and typing. One sentence such as "2-doctor clinic in Jaipur, need fast Wi-Fi and WhatsApp
+  reminders" fills every answer it contains, and only the missing questions are asked. It covers business type,
+  staff, locations, city, GST and needs (in plain outcomes, not product names), then sizes a bundle from the
+  25-product catalogue.
 - **Plan** with one monthly price, GST shown separately, quantities that can be changed with +/-, and add-ons
   that can be switched on or off. Every change is re-checked against the catalogue rules (city tier, GSTIN,
-  minimum size, required base products).
+  minimum size, required base products). Adding an add-on brings the connection it needs with it, and a
+  connection that other items depend on cannot be removed.
 - **Verify (Smart KYC)** after a DPDP consent screen: upload GST certificate, signatory ID, address proof and
   optionally Udyam. Documents are read with OCR and checked against the GST and Udyam registries. Outcome is
-  PASS (setup starts), REVIEW (a person checks) or REJECT (customer is told exactly what to fix).
+  PASS (setup starts), REVIEW (a person checks) or REJECT (customer is told exactly what to fix). Phone photos
+  are straightened, turned upright and evened out for shadows before reading.
+- **Resume** on any phone: each order gets a 6-digit code. The order ID or the owner's mobile number plus that
+  code reopens the application, so an owner can stop to fetch a certificate from their CA and carry on later.
 - **Track** each service through visit, setup and go-live, with the local engineer and partner. Updates arrive
   live, without refreshing.
 
@@ -31,7 +38,9 @@ any number in a reply that the engine did not produce.
   working shown on hover), one-click WhatsApp quote and hand-off to the local partner, all orders, fulfilment.
 - **Verification desk:** the only place that sees document images. Each case opens a rule-by-rule audit:
   what was read, what it was compared to, the similarity score and threshold, and where on the page it was found.
-- The password decides the desk. Sales never sees customer documents.
+- In this prototype one password box decides the desk; this is a demo-only role switcher for judges. Production
+  would use single sign-on (OAuth 2.0 / OpenID Connect) with short-lived JWTs, role-based access and an audit log
+  entry for every document view. Sales never sees customer documents.
 
 ## How it works
 
@@ -41,7 +50,7 @@ any number in a reply that the engine did not produce.
       ▼
  Vercel: Next.js frontend  ── REST + Server-Sent Events ──►  Google Cloud Run: FastAPI backend
  customer app and /admin                                     rules, OCR, scoring, orders, SQLite
-                                                             calls Sarvam (voice) and Gemini (wording)
+                                                             calls Sarvam (voice) and Gemini (understanding, wording)
 ```
 
 | Part | How |
@@ -51,7 +60,7 @@ any number in a reply that the engine did not produce.
 | Lead score | L2-regularised logistic regression trained on `smb_leads.csv` (held-out AUC 0.70). Shown as the stage's historical activation rate times this lead's lift, with the factors that moved it. |
 | Order lifecycle | One-way state machine: quote accepted → consent and documents → verified → field dispatch → live. Nothing goes live without verification. |
 | Live updates | Server-Sent Events for both the customer tracker and the console. |
-| Access | Each order has a private key held by the customer's browser; back office calls need a sales or verifier login. |
+| Access | Each order has a private key held by the customer's browser, recoverable with the resume code (5 tries per 15 minutes). Back office calls need a sales or verifier login. |
 
 ## Data and privacy (DPDP Act, 2023)
 

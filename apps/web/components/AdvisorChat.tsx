@@ -17,7 +17,7 @@ import {
   Headset,
   X,
 } from "lucide-react";
-import { api, Profile, Quote, Segment, GstinStatus, SuitableResult } from "@/lib/api";
+import { api, Profile, Quote, Segment, GstinStatus, SuitableResult, Understood } from "@/lib/api";
 import { FLOW, Lang, label, question, matchOption, parseNumber, t, localeFor } from "@/lib/i18n";
 import { CITIES, cityLabel, matchCity } from "@/lib/i18n/more";
 import { sttSupported, listenOnce, speak, stopSpeaking } from "@/lib/speech";
@@ -45,6 +45,7 @@ export default function AdvisorChat({
   startMode,
   onStartHandled,
   onHome,
+  savedProfile,
 }: {
   lang: Lang;
   setLang: (l: Lang) => void;
@@ -58,6 +59,7 @@ export default function AdvisorChat({
   onHome: () => void;
   hasOrder?: boolean;
   goVerify?: () => void;
+  savedProfile?: Profile | null;
 }) {
   const locale = localeFor(lang);
   const [msgs, setMsgs] = useState<Msg[]>([]);
@@ -77,7 +79,7 @@ export default function AdvisorChat({
   const [catalog, setCatalog] = useState<SuitableResult | null>(null);
   const [qProfile, setQProfile] = useState<Profile | null>(null);
   const leadRef = useRef<string | undefined>(undefined);
-  const freeRef = useRef(false);
+  const answeredRef = useRef<Set<string>>(new Set());
 
   const idRef = useRef(0);
   const initRef = useRef(false);
@@ -195,11 +197,13 @@ export default function AdvisorChat({
     modeRef.current = m;
     setMode(m);
     add("user", m === "voice" ? t(lang, "opt_speak") : t(lang, "opt_type"));
-
+    add("bot", t(lang, "oneLine"));
     askStep(0);
   }
 
-  function askStep(i: number) {
+  function askStep(from: number) {
+    let i = from;
+    while (i < FLOW.length && answeredRef.current.has(FLOW[i].field)) i++;
     stepRef.current = i;
     setStep(i);
     if (i >= FLOW.length) {
@@ -211,10 +215,7 @@ export default function AdvisorChat({
     if (st.kind === "number") setNumVal(st.def ?? 1);
     const q = question(st, lang);
     add("bot", q);
-    if (st.kind === "select") {
-      setSheet(true);
-      return;
-    }
+    if (st.kind === "select") return;
     if (st.kind === "name") return;
     if (modeRef.current === "voice") {
       if (FLOW[i].kind === "multi") speakQ(q);
@@ -229,6 +230,7 @@ export default function AdvisorChat({
   }
 
   function record(field: string, value: string | number | string[]) {
+    answeredRef.current.add(field);
     dataRef.current = { ...dataRef.current, [field]: value };
     setData(dataRef.current);
   }
@@ -315,30 +317,67 @@ export default function AdvisorChat({
     setDone(true);
   }
 
-  async function freeText(input: string) {
-    add("user", input);
-    setText("");
-    freeRef.current = true;
+  async function absorb(input: string): Promise<boolean> {
+    setThinking(true);
+    let u: Understood = {};
     try {
-      const business = String(dataRef.current.business ?? "") || undefined;
-      const r = await api.advisor(sessionId, undefined, input, lang, business);
-      if (r.quote_card && r.profile) {
-        await showQuote(r, r.profile);
-        setDone(true);
-      } else {
-        add("bot", r.text);
-        if (modeRef.current === "voice") speakQ(r.text, () => startListen());
-      }
+      u = await api.understand(sessionId, input, lang);
     } catch {
-      add("bot", t(lang, "netErr"));
+      u = {};
     }
+    setThinking(false);
+    if (!u.city) {
+      const c = matchCity(input);
+      if (c) u.city = c;
+    }
+    const parts: string[] = [];
+    const bizOpt = FLOW[0].options?.find((o) => o.value === u.business_type);
+    if (bizOpt) {
+      record("business_type", bizOpt.value);
+      record("segment", bizOpt.seg ?? u.segment ?? "micro");
+      parts.push(label(bizOpt, lang));
+    }
+    if (u.employees) {
+      record("employees", u.employees);
+      parts.push(t(lang, "staffN").replace("{n}", String(u.employees)));
+    }
+    if (u.num_sites) {
+      record("num_sites", u.num_sites);
+      parts.push(u.num_sites === 1 ? t(lang, "sitesOne") : t(lang, "sitesN").replace("{n}", String(u.num_sites)));
+    }
+    if (u.city) {
+      record("city", u.city);
+      parts.push(cityLabel(u.city, lang));
+    }
+    const needStep = FLOW.find((f) => f.field === "need_tags");
+    const groups = (u.need_groups ?? []).filter((g) => needStep?.options?.some((o) => o.value === g));
+    if (groups.length) {
+      record("need_tags", [...groups, ...(u.need_tags ?? [])]);
+      parts.push(groups.map((g) => label(needStep!.options!.find((o) => o.value === g)!, lang)).join(", "));
+    }
+    const gstStep = FLOW.find((f) => f.field === "gstin_status");
+    const gstOpt = gstStep?.options?.find((o) => o.value === u.gstin_status);
+    if (gstOpt) {
+      record("gstin_status", gstOpt.value);
+      parts.push(`GST: ${label(gstOpt, lang)}`);
+    }
+    if (!parts.length) return false;
+    listenId.current++;
+    cancelListen();
+    setListening(false);
+    add("user", input);
+    add("bot", t(lang, "understood").replace("{x}", parts.join(" · ")));
+    setText("");
+    setTimeout(() => askStep(0), 150);
+    return true;
   }
 
-  function handleText(raw: string) {
+  async function handleText(raw: string) {
     const input = raw.trim();
     if (!input) return;
     const s = FLOW[stepRef.current];
     if (!s) return;
+    if (s.kind !== "name" && input.split(/\s+/).length >= 4 && (await absorb(input))) return;
     if (s.kind === "multi") return;
     if (s.kind === "text") return answer(input, input);
     if (s.kind === "name") {
@@ -376,7 +415,7 @@ export default function AdvisorChat({
       if (s.kind === "select") record("business_type", opt.value);
       return answer(label(opt, lang), s.kind === "select" ? opt.seg ?? v : opt.num ?? v);
     }
-    if (s.kind === "select" || freeRef.current) return void freeText(input);
+    if (s.kind === "select" && (await absorb(input))) return;
     add("user", input);
     add("bot", t(lang, "notUnderstood"));
     if (modeRef.current === "voice") {
@@ -392,7 +431,7 @@ export default function AdvisorChat({
   const isCity = s?.kind === "city";
   const isNumber = s?.kind === "number";
   const total = FLOW.length;
-  const profile = qProfile ?? dataToProfile(data);
+  const profile = qProfile ?? savedProfile ?? dataToProfile(data);
 
   if (view === "plan" && quote) {
     return (
